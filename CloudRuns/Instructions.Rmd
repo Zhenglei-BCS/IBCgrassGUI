@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Set up the running envrionment
 
 ## Compile the programs
 
@@ -57,3 +58,14 @@ zhenglei_gao@ip-10-123-138-37:~/IBCgrassGUI/Model-files$ wine ./IBCgrassGUI.exe 
 chmod a+x IBCgrassGUI.exe
 ```
 
+# Run the models in a working directory instead
+
+Currently the R code runs directly in the Model-Files folder, which is a bit dangerous and the working directory should be separated from the model files. 
+
+A temporary solution is to add all *.txt in Model-Files folder into gitignore.
+
+## R libraries
+
+For colleagues working in the cloud environment, there is no need to have the full R and R packages folder for running the model. There is no need to install the Gtk libraries either. 
+
+There should be a lightweight branch with only model file and simple running examples. 
