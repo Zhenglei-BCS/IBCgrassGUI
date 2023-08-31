@@ -3,7 +3,7 @@
 #####
 library(foreach)
 library(doParallel)
-library(labeling)s
+library(labeling)
 #####
 # Notes
 #####
@@ -22,8 +22,8 @@ load("ExampleAnalyses/DoseResponse/HerbicideSettings/SimulationSettings.Rdata") 
 #####
 ModelVersion <- 3
 PFTfileName <- get("IBCcommunity", envir=SaveEnvironment) # txt-file with trait parameters of all species
-PFTHerbEffectFile <- "./HerbFact.txt" # you need this file if you run IBC with manual effects
-AppRateFile <- "./AppRate.txt" # you need this file if you run IBC with dose-response data
+PFTHerbEffectFile <- "Input-files/HerbFact.txt" # you need this file if you run IBC with manual effects
+AppRateFile <- "Input-files/AppRate.txt" # you need this file if you run IBC with dose-response data
 MCruns <- get("IBCrepetition", envir=SaveEnvironment) # nb of repetitions 
 GridSize <- get("IBCgridsize", envir=SaveEnvironment) # area of the grid
 SeedInput <- get("IBCSeedInput", envir=SaveEnvironment) # external seed input
@@ -63,8 +63,9 @@ cl <- makeCluster(no_cores)
 registerDoParallel(cl)
 
 # Start control simulations in parallel with the given settings
+MCruns <- 2
 foreach(MC = 1:MCruns)  %dopar%
-  system(paste('./IBCgrassGUI', ModelVersion, GridSize, Tmax, InitDuration, PFTfileName, SeedInput, belowres, abres, abampl, tramp, graz, cut,
+  system(paste('wine ./IBCgrassGUI.exe', ModelVersion, GridSize, Tmax, InitDuration, PFTfileName, SeedInput, belowres, abres, abampl, tramp, graz, cut,
                week_start, HerbDuration, 0, EffectModel, scenario, MC, sep=" "), intern=T)
 stopCluster(cl)
 
