@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Compile the programs
 
+Switch to the Model-files folder.
+
 ```
 cd ./Model-files
 g++ -c -fmessage-length=0 -std=c++11 -o CEnvir.o CEnvir.cpp 
@@ -47,8 +49,20 @@ sudo apt update && sudo apt install wine32
 ## Example Run
 
 ```
-zhenglei_gao@ip-10-123-138-37:~/IBCgrassGUI/Model-files$ wine ./IBCgrassGUI.exe 3 173 50 35 Fieldedge.txt 10 90 100 0 0.1 0.01
-1 1 10 0 2 0 1
+zhenglei_gao@ip-10-123-138-37:~/IBCgrassGUI/Model-files$ wine ./IBCgrassGUI.exe 3 173 50 35 Fieldedge.txt 10 90 100 0 0.1 0.01 1 1 10 0 2 0 1
+```
+
+## Error
+
+```
+Error "wine is a 64-bit installation, it cannot be used with a 32-bit wineserver."
+```
+
+Solution:
+
+```
+rm -r .wine/
+sudo apt update && sudo apt install wine32
 ```
 
 
