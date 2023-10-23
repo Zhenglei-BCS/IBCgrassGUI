@@ -41,7 +41,6 @@ cd ..
 ## Install wine 
 
 ```
-sudo apt update
 sudo apt-get install wine-stable
 sudo dpkg --add-architecture i386 
 sudo apt update && sudo apt install wine32
@@ -68,8 +67,6 @@ sudo apt update && sudo apt install wine32
 
 
 ## Additional steps
-
-It is possible that you need to change the rights for the exe file.
 
 ```
 chmod a+x IBCgrassGUI.exe

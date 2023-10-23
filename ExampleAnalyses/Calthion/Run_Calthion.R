@@ -36,10 +36,15 @@ library(dplyr)
 library(readr)
 proj_dir <- "/home/sagemaker-user/Projects/Research/IBCgrassGUI"
 sim_dir <- paste0(proj_dir,"/ExampleAnalyses/Calthion/")
+path <- "Model-files/"
+modelpath <- paste0(proj_dir,"/Model-files/")
+
+
+
 Exp.Matrix <- read_csv(paste0(proj_dir,"/ExampleAnalyses/Calthion/Exp.Matrix.csv")) %>% mutate(RUN=1:n())
 which(Exp.Matrix$PCommunity=="Calthion.txt" & Exp.Matrix$EP=="Establishment")
 i <- 61 # @zhenglei we need a way to subset according to the run number
-
+sim_subpath <- paste0("Run",i)
 # @Zhenglei we will need to load environment based on Exp.Matrix1$PCommunity
 load(paste0(sim_dir,"/SimEnvironments/C/HerbicideSettings/SimulationSettings.Rdata"))# just as an example for this script
 
@@ -53,19 +58,24 @@ PCommunity = Exp.Matrix$PCommunity[i]
 #####
 ModelVersion <- 3
 # NEW
-PFTfileName <- get("IBCcommunity", envir=SaveEnvironment) # txt-file with trait parameters of all species ==> need to change here. 
-PFTfileName <- Exp.Matrix[i,"PCommunity"]
-PFTHerbEffectFile <- "Input-files/HerbFact.txt" # you need this file if you run IBC with manual effects
+## PFTfileName <- get("IBCcommunity", envir=SaveEnvironment) # txt-file with trait parameters of all species ==> need to change here. 
+PFTfileName <- as.character(Exp.Matrix[i,"PCommunity"])
+PFTHerbEffectFile <- "Input-files/HerbFact.txt" # you need this file if you run IBC with manual effects!! 
+## you also need to change this file if you want manual effects! You also need 
+
 AppRateFile <- "Input-files/AppRate.txt" # you need this file if you run IBC with dose-response data
 MCruns <- get("IBCrepetition", envir=SaveEnvironment) # nb of repetitions 
+
 GridSize <- get("IBCgridsize", envir=SaveEnvironment) # area of the grid
 SeedInput <- get("IBCSeedInput", envir=SaveEnvironment) # external seed input
 belowres <- get("IBCbelres", envir=SaveEnvironment) # belowground resources
 abres <- get("IBCabres", envir=SaveEnvironment) # aboveground resources
 abampl <- get("IBCabampl", envir=SaveEnvironment) # seasonal amplitude of aboveground resources
+
 graz <- get("IBCgraz", envir=SaveEnvironment) # grazing intensity
 tramp <- get("IBCtramp", envir=SaveEnvironment) # trampling intensity
 cut <- get("IBCcut", envir=SaveEnvironment) # cutting/mowing events
+
 week_start <- get("IBCweekstart", envir=SaveEnvironment)-10 # start of the herbicide application (calendar week); note that IBC only simulate growing period
 HerbDuration <- get("IBCDuration", envir=SaveEnvironment) # herbicide duration [years]
 RecovDuration <- get("IBCRecovery", envir=SaveEnvironment) # recovery duration [years]
@@ -73,17 +83,16 @@ InitDuration <- get("IBCInit", envir=SaveEnvironment) # intial years
 Tmax <- InitDuration + HerbDuration + RecovDuration # years to simulate
 HerbEff <- get("IBCherbeffect", envir=SaveEnvironment) # txt or dose response
 if(HerbEff=="txt-file") EffectModel <- 0
-if(HerbEff=="dose-response") EffectModel <- 2
+if(HerbEff=="dose-response") EffectModel <- 2 ## What does this mean??
 Scenarios <- as.numeric(get("IBCScenarios", envir=SaveEnvironment)) # number of rates tested
-nb_data <- as.numeric(get("nb_data", envir=SaveEnvironment)) # number of test species
+nb_data <- as.numeric(get("nb_data", envir=SaveEnvironment)) # number of test species in the C case 6
 
 #####
 # running control
 #####
 scenario <- 0 # for control runs
 # copy community file into Model-folder
-path <- "Model-files/"
-modelpath <- paste0(proj_dir,"/Model-files/")
+
 write.table(get("IBCcommunityFile", envir=SaveEnvironment), file=paste(modelpath,PFTfileName, sep=""), sep="\t", quote=F,row.names=F) # make sure the Model-files folder includes the file of your PFT community 
 
 copy <- file.copy("Input-files/HerbFact.txt",  modelpath) # make sure the Model-files folder includes the HerbFact.txt file 
@@ -115,12 +124,12 @@ remove <- file.remove("Model-files/AppRate.txt")
 # copy control simulations
 #####
 # create folder
-dir.create(paste0(sim_dir,"/0"), recursive=TRUE) # adapt path if needed
+dir.create(paste0(sim_dir,sim_subpath,"/0"), recursive=TRUE) # adapt path if needed
 
 # PFT files
 file_list <- list.files(path = "Model-files/", pattern="Pt__*")
 for (file in file_list){
-  path <- paste("currentSimulation/", unlist(strsplit(file,"_"))[6], sep="")
+  path <- paste(sim_dir,sim_subpath,"/", unlist(strsplit(file,"_"))[6], sep="")
   copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
   if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )
 }
@@ -128,7 +137,7 @@ for (file in file_list){
 # GRD files
 file_list <- list.files(path = "Model-files/", pattern="Grd__*", recursive=TRUE)
 for (file in file_list){
-  path <- paste(sim_dir,"/", unlist(strsplit(file,"_"))[6], sep="")
+  path <- paste(sim_dir,sim_subpath,"/", unlist(strsplit(file,"_"))[6], sep="")
   copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
   if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )
 }
@@ -250,10 +259,11 @@ if(HerbEff=="txt-file"){
   # copy treatment
   #####
   # copy files to directory
-  dir.create("currentSimulation/1", recursive=TRUE)
+  ## dir.create("currentSimulation/1", recursive=TRUE)
+  dir.create(paste(sim_dir,sim_subpath,"/1", sep=""))
   file_list <- list.files(path = "Model-files/", pattern="Pt__*")
   for (file in file_list){
-    path <- "currentSimulation/1"
+    path <- paste(sim_dir,sim_subpath,"/1", sep="")
     copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
     #  todo make sure that all files were copied!
     if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )              
@@ -261,22 +271,22 @@ if(HerbEff=="txt-file"){
   # GRD files
   file_list <- list.files(path = "Model-files/", pattern="Grd__*")
   for (file in file_list){
-    path <- "currentSimulation/1"
+    path <- paste(sim_dir,sim_subpath,"/1", sep="")
     copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
     #  todo make sure that all files were copied!
     if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )              
   }
   
   # Copy treamtent settings
-  dir.create(paste("currentSimulation/HerbicideSettings", sep=""), recursive=TRUE)
+  dir.create(paste(sim_dir,sim_subpath,"/HerbicideSettings", sep=""), recursive=TRUE)
   file_list <- list.files(pattern=paste(unlist(strsplit(PFTfileName,".txt")),"*",sep=""))
   file_list <- file_list[file_list!=PFTfileName] #TODO: stimmt das mit der Datei???
   file_list <- c(file_list, "SimulationSettings.Rdata")
-  copy <- file.copy(file_list ,  paste("currentSimulation/HerbicideSettings", sep=""))
+  copy <- file.copy(file_list ,  paste(sim_dir,sim_subpath,"/HerbicideSettings", sep=""))
   #  todo make sure that all files were copied!
   if (all(copy==T)) file.remove(file_list)
-  copy <- file.copy("HerbFact.txt" ,  paste("currentSimulation/HerbicideSettings", sep=""))
+  copy <- file.copy("HerbFact.txt" ,  paste(sim_dir,sim_subpath,"/HerbicideSettings", sep=""))
   if (all(copy==T)) file.remove("HerbFact.txt")
-  copy <- file.copy("PFTsensitivity.txt" ,  paste("currentSimulation/HerbicideSettings", sep=""))
+  copy <- file.copy("PFTsensitivity.txt" ,  paste(sim_dir,sim_subpath,"/HerbicideSettings", sep=""))
   if (all(copy==T)) file.remove("PFTsensitivity.txt")
 }
