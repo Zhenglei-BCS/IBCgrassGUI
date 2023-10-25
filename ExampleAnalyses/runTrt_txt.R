@@ -135,7 +135,7 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
       path <- modelpath
       copy <- file.copy(paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""),  path)
       
-      copy <- file.copy("Input-files/AppRate.txt",  path) ### There is no need for this correct?????
+      copy <- file.copy("Input-files/AppRate.txt",  path) ### There is no need for this correct!! this line could be commented out. 
       
       # change directory
       setwd(modelpath)
