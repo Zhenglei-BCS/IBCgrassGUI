@@ -16,7 +16,7 @@ library(labeling)
 # You can use the GUI to generate the SimulationSettings.Rdata
 # simply run a very small test script (min. repetitions, min. years, min. grid size) and save the project
 # You then might want to adapt some of the settings manually (e.g. increase repetitions, number of simulated years etc.)
-load("ExampleAnalyses/DoseResponse/HerbicideSettings/SimulationSettings.Rdata") # just as an example for this script
+load("ExampleAnalyses/TXTfile/HerbicideSettings/SimulationSettings.Rdata") # just as an example for this script
 #####
 # read PFT community file and sensitivity file
 #####
@@ -82,23 +82,29 @@ remove <- file.remove("Model-files/AppRate.txt")
 # copy control simulations
 #####
 # create folder
-dir.create("currentSimulation/0", recursive=TRUE) # adapt path if needed
+simpath <- "currentSimulation/0"
+dir.create(simpath, recursive=TRUE) # adapt path if needed
 
 # PFT files
 file_list <- list.files(path = "Model-files/", pattern="Pt__*")
-for (file in file_list){
-  path <- paste("currentSimulation/", unlist(strsplit(file,"_"))[6], sep="")
-  copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
-  if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )
-}
+sapply(file_list,function(x)unlist(strsplit(x,"_"))[6])
+file.copy(paste("Model-files/" ,file_list, sep="") ,  simpath)
+file.remove(paste("Model-files/" ,file_list, sep="") )
+# for (file in file_list){
+#   path <- paste("currentSimulation/", unlist(strsplit(file,"_"))[6], sep="")
+#   copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
+#   if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )
+# }
 
 # GRD files
 file_list <- list.files(path = "Model-files/", pattern="Grd__*", recursive=TRUE)
-for (file in file_list){
-  path <- paste("currentSimulation/", unlist(strsplit(file,"_"))[6], sep="")
-  copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
-  if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )
-}
+file.copy(paste("Model-files/" ,file_list, sep="") ,  simpath)
+file.remove(paste("Model-files/" ,file_list, sep="") )
+# for (file in file_list){
+#   path <- paste("currentSimulation/", unlist(strsplit(file,"_"))[6], sep="")
+#   copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
+#   if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )
+# }
 
 #####
 # running treatment based on txt file (not in this example)
@@ -111,7 +117,7 @@ if(HerbEff=="txt-file"){
   
   # generate PFTfile with herbicide sensitivities 
   
-  PFTfile <- get("IBCcommunityFile", envir=SaveEnvironment)
+  PFTfile <- get("IBCcommunityFile", envir=SaveEnvironment) ## this is the real table
   PFTsensitivity <- get("PFTSensitivityFile", envir=SaveEnvironment) # here the sensitivity of all PFTs are stored
   
   # run treatment simulations
@@ -147,7 +153,7 @@ if(HerbEff=="txt-file"){
       
       # remove temp. column and prepare final PFT file for this repetition
       PFTfile<-PFTfile[,-ncol(PFTfile)]
-      PFTfile <- cbind(PFTfile[,c(2,1)],PFTfile[,-c(1:2)])
+      PFTfile <- cbind(PFTfile[,c(2,1)],PFTfile[,-c(1:2)]) ## from 1] "Species"             "ID"      to reverse, ID, Species
       
       #save PFT file
       write.table(PFTfile[,-ncol(PFTfile)], paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""), row.names=F, quote=F, sep="\t")
@@ -155,7 +161,7 @@ if(HerbEff=="txt-file"){
       # copy necessary files to Model-files folder
       path <- "Model-files/"
       copy <- file.copy(paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""),  path)
-      copy <- file.copy("HerbFact.txt",  path)
+      copy <- file.copy("Input-files/HerbFact.txt",  path)
       copy <- file.copy("Input-files/AppRate.txt",  path)
       
       # change directory
@@ -165,10 +171,14 @@ if(HerbEff=="txt-file"){
       mycall<-paste('./IBCgrassGUI', ModelVersion, GridSize, Tmax, InitDuration, paste("./",unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""), 
                     SeedInput, belowres, abres, abampl, tramp, graz, cut, 
                     week_start, HerbDuration, 1, EffectModel, scenario, MC, sep=" ")
-      
+      ## system(paste('wine ./IBCgrassGUI.exe', ModelVersion, GridSize, Tmax, InitDuration, PFTfileName, SeedInput, belowres, abres, abampl, tramp, graz, cut,
+        ##           week_start, HerbDuration, 0, EffectModel, scenario, MC, sep=" "), intern=T)
       # start treatment run
+      t0 <- Sys.time()
+      set.seed(100)
       system(mycall, intern=TRUE)
-      
+      t1 <- Sys.time()
+      t1-t0
       # change working directory
       setwd('..')
       
@@ -187,26 +197,20 @@ if(HerbEff=="txt-file"){
   # copy files to directory
   dir.create("currentSimulation/1", recursive=TRUE)
   file_list <- list.files(path = "Model-files/", pattern="Pt__*")
-  for (file in file_list){
-    path <- "currentSimulation/1"
-    copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
-    #  todo make sure that all files were copied!
-    if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )              
-  } 
+  simpath <- "currentSimulation/1"
+  file.copy(paste("Model-files/" ,file_list, sep="") ,  simpath)
+  file.remove(paste("Model-files/" ,file_list, sep="") )
+  
   # GRD files
   file_list <- list.files(path = "Model-files/", pattern="Grd__*")
-  for (file in file_list){
-    path <- "currentSimulation/1"
-    copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
-    #  todo make sure that all files were copied!
-    if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )              
-  }
+  file.copy(paste("Model-files/" ,file_list, sep="") ,  simpath)
+  file.remove(paste("Model-files/" ,file_list, sep="") )
   
   # Copy treamtent settings
   dir.create(paste("currentSimulation/HerbicideSettings", sep=""), recursive=TRUE)
   file_list <- list.files(pattern=paste(unlist(strsplit(PFTfileName,".txt")),"*",sep=""))
   file_list <- file_list[file_list!=PFTfileName] #TODO: stimmt das mit der Datei???
-  file_list <- c(file_list, "SimulationSettings.Rdata")
+  ##file_list <- c(file_list, "SimulationSettings.Rdata") --> SimulationSettings.Rdata is generated from GUI
   copy <- file.copy(file_list ,  paste("currentSimulation/HerbicideSettings", sep=""))
   #  todo make sure that all files were copied!
   if (all(copy==T)) file.remove(file_list)

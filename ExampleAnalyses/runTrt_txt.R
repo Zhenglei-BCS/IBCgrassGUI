@@ -2,7 +2,7 @@ genHerbFactFile <- function(EP="Establishment",file=NULL){
   allEP <- structure(list(Biomass = 0L, Mortality = 0L, SeedlingBiomass = 0L, 
                           Establishment = 0L, SeedSterility = 0L, SeedNumber = 0L), class = "data.frame", row.names = c(NA, 
                                                                                                                         -1L))
-  allEP[EP] <- 1
+  if(!is.null(EP)) allEP[EP] <- 1
   if(!is.null(file)) write.table(allEP,file,row.names = F,quote = F)
   return(EP)
 }
@@ -21,10 +21,31 @@ genSensitivity <- function(n=100,HCx=0.05,HT="R"){
   return(sensi1)
 }
 
+#' Title
+#'
+#' @param HCx 
+#' @param EP 
+#' @param HT 
+#' @param PCommunity 
+#' @param modelpath 
+#' @param sim_dir 
+#' @param sim_subpath 
+#' @param MCruns 
+#' @param SaveEnvironment 
+#' @param genHerbFile 
+#' @param proj_dir 
+#' @param ... 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
                    modelpath="/home/sagemaker-user/Projects/Research/IBCgrassGUI/Model-files/",
                    sim_dir="/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/",
-                   sim_subpath="Run61",MCruns=2,SaveEnvironment,...){
+                   sim_subpath="Test1",MCruns=2,SaveEnvironment,genHerbFile=TRUE,
+                   proj_dir="/home/sagemaker-user/Projects/Research/IBCgrassGUI/",
+                   useHerbFile="Input-files/HerbFact.txt",...){
   #####
   # read PFT community file and sensitivity file
   #####
@@ -32,10 +53,10 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   # NEW
   ## PFTfileName <- get("IBCcommunity", envir=SaveEnvironment) # txt-file with trait parameters of all species ==> need to change here. 
   PFTfileName <- as.character(PCommunity)
-  PFTHerbEffectFile <- "Input-files/HerbFact.txt" # you need this file if you run IBC with manual effects!! 
+  PFTHerbEffectFile <- paste0(proj_dir,"Input-files/HerbFact.txt") # you need this file if you run IBC with manual effects!! 
   ## you also need to change this file if you want manual effects! You also need 
   
-  AppRateFile <- "Input-files/AppRate.txt" # you need this file if you run IBC with dose-response data
+  AppRateFile <- paste0(proj_dir,"Input-files/AppRate.txt") # you need this file if you run IBC with dose-response data
   #MCruns <- get("IBCrepetition", envir=SaveEnvironment) # nb of repetitions 
   
   GridSize <- get("IBCgridsize", envir=SaveEnvironment) # area of the grid
@@ -70,64 +91,84 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   
   PFTfile <- get("IBCcommunityFile", envir=SaveEnvironment)
   PFTsensitivity <- get("PFTSensitivityFile", envir=SaveEnvironment)
-  genHerbFactFile(EP=EP,file=paste0(modelpath,"HerbFact.txt"))
+  if(genHerbFile ) genHerbFactFile(EP=EP,file=paste0(modelpath,"HerbFact.txt")) else{
+   ## use the copied herbfile before the MCruns.
+  }
+  
+  
+  copy <- file.copy(paste0(proj_dir,"Input-files/AppRate.txt"),  modelpath) ### There is no need for this correct!! this line could be commented out. 
+  ## file.copy(paste0(proj_dir,"Input-files/HerbFact.txt"),  modelpath)
+  file.copy(paste0(proj_dir,useHerbFile),  modelpath)
   dir.create(paste(sim_dir,sim_subpath,"/HerbicideSettings", sep=""), recursive=TRUE)
   # run treatment simulations
   foreach(MC = 1:MCruns, .export=c("PFTfile", "PFTsensitivity", "PFTfileName", "EffectModel",
                                    "ModelVersion", "belowres", "abres", "abampl", "Tmax", "InitDuration", "GridSize", "SeedInput",
-                                   "HerbDuration", "tramp", "graz", "cut", "week_start",
+                                   "HerbDuration", "tramp", "graz", "cut", "week_start","HCx","HT",
                                    "genSensitivity","genHerbFactFile"))  %dopar%
     {
       scenario <- 1 # for treatment simulations
       
-      # Generate PFTfile for each MC run
-      # NEW - random assignment per MC run of PFT sensitivity ####
-      # @Zhenglei should we set.seed???
-      # consider HT
-      if (HT=="R"){
-        # NEW, PFT sensitivity info ####
+      
+      if(HCx==0){
+        # Generate PFTfile for each MC run
+        PFTfile<-merge(PFTfile, PFTsensitivity, by="Species")
         
-        # Initial assignment of sensitivite based on HCx (e.g., HCx=005 =>5% =>"High", 95% =>"Low")
-        #PFTsensitivity$Sensitivity = genSensitivity(n=nrow(PFTsensitivity),HCx=HCx,HT="R")
-        PFTfile$Sensitivity = genSensitivity(n=nrow(PFTfile),HCx=HCx,HT="R")
+        #make sure, all values are set to 0 (no affect)
+        PFTfile[,25] <- 0
+        
+        # set random values
+        PFTfile[PFTfile$Sensitivity=="random",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="random",]),  min = 0, max = 1))
+        
+        # set full values
+        PFTfile[PFTfile$Sensitivity=="full",25] <- c(rep(1, nrow(PFTfile[PFTfile$Sensitivity=="full",])))
+        
+        # set high values
+        PFTfile[PFTfile$Sensitivity=="high",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="high",]),  min = 0.66, max = 1))
+        
+        # set medium values
+        PFTfile[PFTfile$Sensitivity=="medium",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="medium",]),  min = 0.35, max = 0.65))
+        
+        # set low values
+        PFTfile[PFTfile$Sensitivity=="low",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="low",]),  min = 0.1, max = 0.35))
+        
+        # copy others (not affected PFTs get 0)
+        PFTfile[PFTfile$Sensitivity=="not affected",25] <- c(rep(0, nrow(PFTfile[PFTfile$Sensitivity=="not affected",])))
+        PFTfile<-PFTfile[,-ncol(PFTfile)]
+        PFTfile <- cbind(PFTfile[,c(2,1)],PFTfile[,-c(1:2)]) ## ??? I don't think it is doing anything other than change the order of the columns. 
+        
+        
+      }else{
+        # Generate PFTfile for each MC run
+        # NEW - random assignment per MC run of PFT sensitivity ####
+        # @Zhenglei should we set.seed???
+        # consider HT
+        if (HT=="R"){
+          # NEW, PFT sensitivity info ####
+          
+          # Initial assignment of sensitivite based on HCx (e.g., HCx=005 =>5% =>"High", 95% =>"Low")
+          #PFTsensitivity$Sensitivity = genSensitivity(n=nrow(PFTsensitivity),HCx=HCx,HT="R")
+          PFTfile$Sensitivity = genSensitivity(n=nrow(PFTfile),HCx=HCx,HT="R")
+          
+        }
+        if (HT=="TMono"){} # need to split by mono/dicot, Mono get PFTfile$Sensitivity== 0, dicot get the rest (0 count to sum($Sensitivity=="<25%")) 
+        if (HT=="TDicot"){} # need to split by mono/dicot, Dicot get PFTfile$Sensitivity== 0, monocot get the rest (0 count to sum($Sensitivity=="<25%"))
+        
+        
+        #make sure, all values are set to 0 (no affect)
+        PFTfile[,25] <- 0
+        
+        # NEW - effect categories #### @Zhenglei this could be replace by sampling from the SSD probability distribution?
+        # set <25% values
+        PFTfile[PFTfile$Sensitivity=="<25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="<25%",]),  min = 0, max = 0.25))
+        # set >25% values
+        PFTfile[PFTfile$Sensitivity==">25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity==">25%",]),  min = 0.25, max = 1))
+        PFTfile<-PFTfile[,-ncol(PFTfile)]
+        
         
       }
-      if (HT=="TMono"){} # need to split by mono/dicot, Mono get PFTfile$Sensitivity== 0, dicot get the rest (0 count to sum($Sensitivity=="<25%")) 
-      if (HT=="TDicot"){} # need to split by mono/dicot, Dicot get PFTfile$Sensitivity== 0, monocot get the rest (0 count to sum($Sensitivity=="<25%"))
       
       
-      #make sure, all values are set to 0 (no affect)
-      PFTfile[,25] <- 0
-      
-      # NEW - effect categories #### @Zhenglei this could be replace by sampling from the SSD probability distribution?
-      # set <25% values
-      PFTfile[PFTfile$Sensitivity=="<25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="<25%",]),  min = 0, max = 0.25))
-      # set >25% values
-      PFTfile[PFTfile$Sensitivity==">25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity==">25%",]),  min = 0.25, max = 1))
-      
-      
-      # # set random values
-      # PFTfile[PFTfile$Sensitivity=="random",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="random",]),  min = 0, max = 1))
-      # 
-      # # set full values
-      # PFTfile[PFTfile$Sensitivity=="full",25] <- c(rep(1, nrow(PFTfile[PFTfile$Sensitivity=="full",])))
-      # 
-      # # set high values
-      # PFTfile[PFTfile$Sensitivity=="high",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="high",]),  min = 0.66, max = 1))
-      # 
-      # # set medium values
-      # PFTfile[PFTfile$Sensitivity=="medium",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="medium",]),  min = 0.35, max = 0.65))
-      # 
-      # # set low values
-      # PFTfile[PFTfile$Sensitivity=="low",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="low",]),  min = 0.1, max = 0.35))
-      # 
-      # # copy others (not affected PFTs get 0)
-      # PFTfile[PFTfile$Sensitivity=="not affected",25] <- c(rep(0, nrow(PFTfile[PFTfile$Sensitivity=="not affected",])))
-      # 
-      # remove temp. column and prepare final PFT file for this repetition
-      PFTfile<-PFTfile[,-ncol(PFTfile)]
-      PFTfile <- cbind(PFTfile[,c(2,1)],PFTfile[,-c(1:2)]) ## ??? I don't think it is doing anything other than change the order of the columns. 
-      
+
       #save PFT file
       write.table(PFTfile[,-ncol(PFTfile)], paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""), row.names=F, quote=F, sep="\t")
       
@@ -135,7 +176,6 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
       path <- modelpath
       copy <- file.copy(paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""),  path)
       
-      copy <- file.copy("Input-files/AppRate.txt",  path) ### There is no need for this correct!! this line could be commented out. 
       
       # change directory
       setwd(modelpath)
@@ -154,7 +194,7 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
       # remove old files
       #remove <- file.remove(paste(modelpath, unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""))
       file.remove(paste(modelpath, unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""))
-      #remove <- file.remove("Model-files/HerbFact.txt")
+      if(genHerbFile) remove <- file.remove(paste0(proj_dir,"Model-files/HerbFact.txt"))
       #remove <- file.remove("Model-files/AppRate.txt")
     }
   
@@ -165,8 +205,7 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   # copy treatment
   #####
   ## dir.create("currentSimulation/1", recursive=TRUE)
-  setwd(modelpath)
-  setwd("..")
+  
   dir.create(paste(sim_dir,sim_subpath,"/1", sep=""))
   file_list <- list.files(path = "Model-files/", pattern="Pt__*")
   for (file in file_list){

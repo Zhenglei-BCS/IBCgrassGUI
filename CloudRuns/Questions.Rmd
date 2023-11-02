@@ -1,0 +1,48 @@
+If not copying AppRate.txt
+
+```
+Error while opening AppRateFileError while opening AppRateFile[[1]]
+```
+
+
+
+```{r eval=F}
+ ###################################################
+  if(is.null(get("PFTSensitivityFile", envir=IBCvariables))){
+    PFTfile <- get("IBCcommunityFile", envir = IBCvariables)
+    Sensitivity <- c("random", "not affected")
+    for (i in 1:get("nb_data", envir=IBCvariables)){
+      Sensitivity <- c(Sensitivity, paste("dose response based on Spec ", i, sep=""))
+    }
+    length(Sensitivity) = length(PFTfile$Species)
+    df <- data.frame(Species = as.character(PFTfile$Species), Sensitivity=Sensitivity, stringsAsFactors=F)
+    df[is.na(df)] <- "Please select sensitivity"
+    df$Sensitivity<-factor(df$Sensitivity)
+  } else {
+    Sensitivity <- c("random", "not affected")
+    for (i in 1:get("nb_data", envir=IBCvariables)){
+      Sensitivity <- c(Sensitivity, paste("dose response based on Spec ", i, sep=""))
+    }
+    Sensitivity <- c(Sensitivity, "Please select sensitivity")
+    factor(Sensitivity)
+    df <- get("PFTSensitivityFile", envir = IBCvariables)
+    df[is.na(df)] <- "Please select sensitivity"
+    df$Sensitivity<-factor(df$Sensitivity)
+    levels(df$Sensitivity) <- c(levels(df$Sensitivity),Sensitivity)
+  }
+  ###################################################
+```
+
+
+
+```{r}
+ # remove temp. column and prepare final PFT file for this repetition
+      PFTfile<-PFTfile[,-ncol(PFTfile)]
+      PFTfile <- cbind(PFTfile[,c(2,1)],PFTfile[,-c(1:2)]) ## why do we need to change the orders????
+      
+      #save PFT file
+      ### ???? the last column is already removed, why do we still want remove the last column again??
+      write.table(PFTfile[,-ncol(PFTfile)], paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""), row.names=F, quote=F, sep="\t")
+  
+```
+

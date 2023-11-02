@@ -205,7 +205,7 @@ if(HerbEff=="txt-file"){
   dir.create(paste("currentSimulation/HerbicideSettings", sep=""), recursive=TRUE)
   file_list <- list.files(pattern=paste(unlist(strsplit(PFTfileName,".txt")),"*",sep=""))
   file_list <- file_list[file_list!=PFTfileName] #TODO: stimmt das mit der Datei???
-  file_list <- c(file_list, "SimulationSettings.Rdata")
+  ##file_list <- c(file_list, "SimulationSettings.Rdata") --> SimulationSettings.Rdata is generated from GUI
   copy <- file.copy(file_list ,  paste("currentSimulation/HerbicideSettings", sep=""))
   #  todo make sure that all files were copied!
   if (all(copy==T)) file.remove(file_list)

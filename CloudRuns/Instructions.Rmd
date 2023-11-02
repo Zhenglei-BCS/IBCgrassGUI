@@ -38,9 +38,10 @@ g++ -o IBCgrassGUI SPftTraits.o RunPara.o Plant.o OutStructs.o LCG.o GMHerbicide
 cd ..
 ```
 
-## Install wine 
+## Install wine every time
 
 ```
+sudo apt update
 sudo apt-get install wine-stable
 sudo dpkg --add-architecture i386 
 sudo apt update && sudo apt install wine32
