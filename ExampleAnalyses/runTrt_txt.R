@@ -91,14 +91,15 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   
   PFTfile <- get("IBCcommunityFile", envir=SaveEnvironment)
   PFTsensitivity <- get("PFTSensitivityFile", envir=SaveEnvironment)
-  if(genHerbFile ) genHerbFactFile(EP=EP,file=paste0(modelpath,"HerbFact.txt")) else{
-   ## use the copied herbfile before the MCruns.
+  if(genHerbFile) genHerbFactFile(EP=EP,file=paste0(modelpath,"HerbFact.txt")) else{
+   ## use the copied Herbfile already copied before the MCruns.
+    file.copy(paste0(proj_dir,useHerbFile),  modelpath)
   }
   
   
   copy <- file.copy(paste0(proj_dir,"Input-files/AppRate.txt"),  modelpath) ### There is no need for this correct!! this line could be commented out. 
   ## file.copy(paste0(proj_dir,"Input-files/HerbFact.txt"),  modelpath)
-  file.copy(paste0(proj_dir,useHerbFile),  modelpath)
+  
   dir.create(paste(sim_dir,sim_subpath,"/HerbicideSettings", sep=""), recursive=TRUE)
   # run treatment simulations
   foreach(MC = 1:MCruns, .export=c("PFTfile", "PFTsensitivity", "PFTfileName", "EffectModel",
@@ -237,3 +238,6 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   # copy <- file.copy(paste0(modelpath,"PFTsensitivity.txt") ,  paste(sim_dir,sim_subpath,"/HerbicideSettings", sep=""))
   # if (all(copy==T)) file.remove("PFTsensitivity.txt")
 }
+
+
+

@@ -11,6 +11,15 @@ format:
     toc-depth: 4
 ---
 
+```{r}
+knitr::opts_chunk$set(message=F,warning = F)
+```
+
+
+```{r}
+library(tidyverse)
+```
+
 
 ```{r}
 here::i_am("./Calthion.qmd")
@@ -18,6 +27,99 @@ list.dirs("../Calthion",recursive = F)
 ```
 
 ```{r}
-
+dirs <- paste0("../Calthion/Run",37:60)
 ```
 
+```{r}
+i <- 1
+flist <- grep("Grd__",list.files(paste0(dirs[i],"/1/")),value = T)
+allMC <- plyr::ldply(1:length(flist),function(j){
+  dat <- data.table::fread(paste0(dirs[i],"/1/",flist[j]))
+  dat$MC <- j
+  return(dat)
+}
+)
+std <- function(x) sd(x)/sqrt(length(x))
+
+# allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
+allsum <- allMC %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ))
+allsumw <- allsum%>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
+ggplot(allsumw%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alphs=0.1)+ylab("Mean Total Mass")
+
+
+
+allsum <- allMC %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ),shannon=c(mean(shannon),std(shannon),quantile(shannon,c(0,0.25,0.5,0.75,1))))
+allsumw <- allsum%>%pivot_wider(id_cols = Time,names_from = stats,values_from = shannon)
+ggplot(allsumw%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alphs=0.1)+ylab("Mean Total Mass")
+
+ggplot(allsumw,aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alphs=0.1)+ylab("Mean Total Mass")
+```
+
+```{r}
+flist <- grep("Grd__",list.files(paste0("../Calthion/Run61","/0/")),value = T)
+allMC0 <- plyr::ldply(1:length(flist),function(j){
+  dat <- data.table::fread(paste0("../Calthion/Run61","/0/",flist[j]))
+  dat$MC <- j
+  return(dat)
+}
+)
+
+
+# allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
+allsum0 <- allMC0 %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ))
+allsumw0 <- allsum0%>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
+
+
+ggplot(allsumw0%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alpha=0.1)+ylab("Mean Total Mass")
+
+ggplot(allsumw0%>%filter(Time>500),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>500),aes(x=Time,y=Mean),col=2)#+scale_y_log10()
+```
+
+
+```{r}
+flist <- grep("Grd__",list.files(paste0("../Calthion/Run60","/1/")),value = T)
+allMC0 <- plyr::ldply(1:length(flist),function(j){
+  dat <- data.table::fread(paste0("../Calthion/Run60","/1/",flist[j]))
+  dat$MC <- j
+  return(dat)
+}
+)
+
+
+# allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
+allsum0 <- allMC0 %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ),shannon=c(mean(shannon),std(shannon),quantile(shannon,c(0,0.25,0.5,0.75,1))))
+allsumw0 <- allsum0%>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
+
+
+ggplot(allsumw0%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alpha=0.1)+ylab("Mean Total Mass")
+
+ggplot(allsumw0%>%filter(Time>500),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>500),aes(x=Time,y=Mean),col=2)#+scale_y_log10()
+```
+
+
+
+```{r}
+ggplot(allsumw0%>%filter(Time>30*24),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>30*24),aes(x=Time,y=Mean),col=2)
+```
+
+
+
+```{r}
+flist <- grep("Grd__",list.files(paste0("../Calthion/Run60","/1/")),value = T)
+allMC0 <- plyr::ldply(1:length(flist),function(j){
+  dat <- data.table::fread(paste0("../Calthion/Run60","/1/",flist[j]))
+  dat$MC <- j
+  return(dat)
+}
+)
+
+
+# allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
+allsum0 <- allMC0 %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ),shannon=c(mean(shannon),std(shannon),quantile(shannon,c(0,0.25,0.5,0.75,1))))
+allsumw0 <- allsum0%>%pivot_wider(id_cols = Time,names_from = stats,values_from = shannon)
+
+
+ggplot(allsumw0%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alpha=0.1)+ylab("Mean Shannon")
+
+ggplot(allsumw0%>%filter(Time>500),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>500),aes(x=Time,y=Mean),col=2)+geom_ribbon(data=allsumw%>%filter(Time>500),aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1,col=2,fill="red")+ylab("Mean Total Mass")+xlim(c(700,800))#+scale_y_log10()
+```
