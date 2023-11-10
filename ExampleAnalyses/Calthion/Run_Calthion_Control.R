@@ -1,6 +1,6 @@
 source("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/runTrt_txt.R")
 source("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/runCtr_txt.R")
-
+#print(runctr)
 #####
 # libraries
 #####

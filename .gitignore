@@ -4,3 +4,4 @@
 .Ruserdata
 Model-files/*.json
 R/*
+ExampleAnalyses/Fieldedge/* 

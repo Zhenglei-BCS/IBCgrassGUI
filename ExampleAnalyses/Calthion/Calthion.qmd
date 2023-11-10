@@ -9,6 +9,8 @@ format:
   html:
     toc: true
     toc-depth: 4
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r}
@@ -18,6 +20,7 @@ knitr::opts_chunk$set(message=F,warning = F)
 
 ```{r}
 library(tidyverse)
+theme_set(theme_bw())
 ```
 
 
@@ -30,96 +33,228 @@ list.dirs("../Calthion",recursive = F)
 dirs <- paste0("../Calthion/Run",37:60)
 ```
 
+
+
+
+```{r}
+std <- function(x) sd(x)/sqrt(length(x))
+
+# m1, m2: the sample means
+# s1, s2: the sample standard deviations
+# n1, n2: the same sizes
+# m0: the null value for the difference in means to be tested for. Default is 0. 
+# equal.variance: whether or not to assume equal variance. Default is FALSE. 
+t.test2 <- function(m1,m2,s1,s2,n1,n2,m0=0,equal.variance=FALSE)
+{
+    if( equal.variance==FALSE ) 
+    {
+        se <- sqrt( (s1^2/n1) + (s2^2/n2) )
+        # welch-satterthwaite df
+        df <- ( (s1^2/n1 + s2^2/n2)^2 )/( (s1^2/n1)^2/(n1-1) + (s2^2/n2)^2/(n2-1) )
+    } else
+    {
+        # pooled standard deviation, scaled by the sample sizes
+        se <- sqrt( (1/n1 + 1/n2) * ((n1-1)*s1^2 + (n2-1)*s2^2)/(n1+n2-2) ) 
+        df <- n1+n2-2
+    }      
+    t <- (m1-m2-m0)/se 
+    dat <- c(m1-m2, se, t, 2*pt(-abs(t),df))    
+    names(dat) <- c("Difference of means", "Std Error", "t", "p-value")
+    return(dat) 
+}
+
+t.test3 <- function(x){
+  res<- t.test2(x[1],x[3],x[2],x[4],n1=30,n2=30)
+  res["p-value"]
+}
+mysum <- function(x){c(mean(x),sd(x),quantile(x,c(0,0.05,0.5,0.95,1)))}
+relctr <- function(ctr,trt){
+  (trt-ctr)/ctr
+}
+read_all_flist <- function(flist,Trt=TRUE,dir){
+  allMC <- plyr::ldply(1:length(flist),function(j){
+    if(Trt) dat <- data.table::fread(paste0(dir,"/1/",flist[j])) else{
+      dat <- data.table::fread(paste0(dir,"/0/",flist[j]))
+    }
+    dat$MC <- j
+    return(dat)
+  }
+  )
+  
+  
+  # allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
+  allsum <- allMC %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),sd(totMass),quantile(totMass,c(0,0.05,0.5,0.95,1))),stats=c("Mean","SD","Min.", "5th Per.", "Median" ,    "95th Per.", "Max." ),abovemass=mysum(abovemass),belowmass=mysum(belowmass),shannon=mysum(shannon),NInd=mysum(NInd),NPFT=mysum(NPFT))
+  
+  return(allsum)
+}
+
+read_all_dirs <- function(dirs,startT=30*24,stopT=30*27,allsum0,endpoint="totMass"){
+  runind <- sapply(str_split(dirs,"/"),function(x) x[length(x)])
+  names(dirs) <- runind
+  ctr <- allsum0 %>%filter(Time>startT & Time < stopT)
+  ctrw <- ctr%>%pivot_wider(id_cols = Time,names_from = stats,values_from = endpoint)
+  alltrt <- plyr::ldply(dirs,function(x){
+    allsum <- read_all_flist(flist,dir=x)
+    if(Trt) tmp <- rbind(allsum%>%filter(stats %in% c("Mean","SD"))%>%mutate(group="TRT"),allsum0%>%filter(stats %in% c("Mean","SD"))%>%mutate(group="CTR"))
+    tmp1 <- tmp %>% group_by(Time) %>% summarise_at(c("totMass","abovemass","belowmass","shannon","NInd","NPFT"),~t.test3(.x))%>%mutate(stats="p-value") %>% relocate(stats,.after = totMass)
+    allsum <- rbind(allsum,tmp1)
+    trt <- allsum %>%filter(Time>startT & Time < stopT)
+    trtw <- trt %>%pivot_wider(id_cols = Time,names_from = stats,values_from = endpoint)
+    trtw <- trtw %>% mutate(Ctr=ctrw$Mean) %>% mutate_at(c("Mean","5th Per.", "95th Per."),~relctr(.x,ctr=Ctr))
+    return(trtw)
+  })
+  return(alltrt)
+  
+}
+```
+
+
 ```{r}
 i <- 1
 flist <- grep("Grd__",list.files(paste0(dirs[i],"/1/")),value = T)
-allMC <- plyr::ldply(1:length(flist),function(j){
-  dat <- data.table::fread(paste0(dirs[i],"/1/",flist[j]))
-  dat$MC <- j
-  return(dat)
-}
-)
+# allMC <- plyr::ldply(1:length(flist),function(j){
+#   dat <- data.table::fread(paste0(dirs[i],"/1/",flist[j]))
+#   dat$MC <- j
+#   return(dat)
+# }
+# )
 std <- function(x) sd(x)/sqrt(length(x))
 
 # allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
-allsum <- allMC %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ))
+allsum <- read_all_flist(flist,dir=dirs[1])
 allsumw <- allsum%>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
-ggplot(allsumw%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alphs=0.1)+ylab("Mean Total Mass")
-
-
-
-allsum <- allMC %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ),shannon=c(mean(shannon),std(shannon),quantile(shannon,c(0,0.25,0.5,0.75,1))))
-allsumw <- allsum%>%pivot_wider(id_cols = Time,names_from = stats,values_from = shannon)
-ggplot(allsumw%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alphs=0.1)+ylab("Mean Total Mass")
-
-ggplot(allsumw,aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alphs=0.1)+ylab("Mean Total Mass")
-```
-
-```{r}
-flist <- grep("Grd__",list.files(paste0("../Calthion/Run61","/0/")),value = T)
-allMC0 <- plyr::ldply(1:length(flist),function(j){
-  dat <- data.table::fread(paste0("../Calthion/Run61","/0/",flist[j]))
-  dat$MC <- j
-  return(dat)
-}
-)
-
-
-# allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
-allsum0 <- allMC0 %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ))
+#ggplot(allsumw%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`),alpha=0.1)+ylab("Mean Total Mass")
+allsum0 <- read_all_flist(flist=grep("Grd__",list.files(paste0("/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run70","/0/")),value = T),Trt=F,dir="/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run70")
+allsum0
 allsumw0 <- allsum0%>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
+```
 
+```{r}
+ggplot(allsumw%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw0%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean),col=2)+geom_ribbon(data=allsumw0%>%filter(Time>500 & Time < 600),aes(ymin=`5th Per.`,ymax=`95th Per.`),alpha=0.1,fill=2)
 
-ggplot(allsumw0%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alpha=0.1)+ylab("Mean Total Mass")
+```
 
-ggplot(allsumw0%>%filter(Time>500),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>500),aes(x=Time,y=Mean),col=2)#+scale_y_log10()
+## Time Range
+
+```{r}
+ctr <- allsum0 %>%filter(Time>30*24 & Time < 30*27)
+ctrw <- ctr%>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
+
+ctrw1 <- ctr%>%pivot_wider(id_cols = Time,names_from = stats,values_from = "totMass")
+trt <- allsum %>%filter(Time>30*24 & Time < 30*27)
+trtw <- trt %>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
+trtw <- trtw %>% mutate(Ctr=ctrw$Mean) %>% mutate_at(c("Mean","5th Per.", "95th Per."),~relctr(.x,ctr=Ctr))
+ctrw <- ctrw %>% mutate(Ctr=ctrw$Mean) %>% mutate_at(c("Mean","5th Per.", "95th Per."),~relctr(.x,ctr=Ctr))
+
+ggplot(ctrw,aes(x=Time,y=Mean))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`),alpha=0.1)+ylab("Mean Total Mass relative to control")+annotate("rect", xmin = 25*30, xmax = 26*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(data=trtw,aes(x=Time,y=Mean),col=2)+geom_point(data=trtw,aes(x=Time,y=Mean))+geom_ribbon(data=trtw,aes(ymin=`5th Per.`,ymax=`95th Per.`),alpha=0.1,fill=2)+ggtitle("Run 37")
+```
+## SETAC Figure Preparation
+
+```{r}
+allsum0 <- read_all_flist(flist=grep("Grd__",list.files(paste0("/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run70","/0/")),value = T),Trt=F,dir="/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run70")
 ```
 
 
 ```{r}
-flist <- grep("Grd__",list.files(paste0("../Calthion/Run60","/1/")),value = T)
-allMC0 <- plyr::ldply(1:length(flist),function(j){
-  dat <- data.table::fread(paste0("../Calthion/Run60","/1/",flist[j]))
-  dat$MC <- j
-  return(dat)
+alltrt <- read_all_dirs(dirs,startT=30*24,stopT=30*27,allsum0,endpoint="abovemass")
+Exp.Matrix <- read_csv(paste0(proj_dir,"/ExampleAnalyses/Calthion/Exp.Matrix.csv")) %>% mutate(RUN=1:n())
+alltrtw <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+allctrw <- cross_join(as.data.frame(ctrw),expand.grid(HCx=0,EP=c("Biomass","Mortality"),PCommunity="Calthion.txt"))
+ggplot(allctrw,aes(x=Time,y=Mean))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`),alpha=0.1)+ylab("Mean Above Mass relative to control")+annotate("rect", xmin = 25*30, xmax = 26*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(data=alltrtw,aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(data=alltrtw,aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(data=alltrtw,aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(.~EP)
+```
+
+```{r}
+appy <- c(25*30+1,26*30)
+recy <- c(26*30+1,27*30)
+
+resdat1 <- alltrtw %>% filter(Time >= appy[1] & Time <=appy[2]) %>% group_by(HCx,EP,PCommunity) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Application")
+
+resdat2 <- alltrtw %>% filter(Time >= recy[1] & Time <=recy[2]) %>% group_by(HCx,EP,PCommunity) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Recovery")
+resdat <- rbind(resdat1,resdat2)
+
+resdat%>%ggplot(aes(x=HCx,y=value,col=`Yearly average`))+geom_point()+facet_grid(Year~EP)+ylab("Total Mass")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")
+```
+
+
+```{r eval=FALSE}
+ggsave("Calthion_HCx_totMass.png",width=7,height=5,dpi=300)
+```
+
+
+
+```{r}
+
+ctrw <- ctr%>%pivot_wider(id_cols = Time,names_from = stats,values_from = shannon)
+ctrw <- ctrw %>% mutate(Ctr=ctrw$Mean) %>% mutate_at(c("Mean","5th Per.", "95th Per."),~relctr(.x,ctr=Ctr))
+```
+
+```{r}
+alltrt <- read_all_dirs(dirs,startT=30*24,stopT=30*27,allsum0,endpoint="shannon")
+Exp.Matrix <- read_csv(paste0(proj_dir,"/ExampleAnalyses/Calthion/Exp.Matrix.csv")) %>% mutate(RUN=1:n())
+alltrtw <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+allctrw <- cross_join(as.data.frame(ctrw),expand.grid(HCx=0,EP=c("Biomass","Mortality"),PCommunity="Calthion.txt"))
+ggplot(allctrw,aes(x=Time,y=Mean))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`),alpha=0.1)+ylab("Mean Total Mass relative to control")+annotate("rect", xmin = 25*30, xmax = 26*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(data=alltrtw,aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(data=alltrtw,aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(data=alltrtw,aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(.~EP)
+```
+
+```{r eval=FALSE}
+ggsave("Calthion_shannon.png",width=9,height=6.5,dpi=300)
+```
+
+- totMass, NInd, NPFT, shannon
+
+
+```{r}
+Exp.Matrix <- read_csv(paste0(proj_dir,"/ExampleAnalyses/Calthion/Exp.Matrix.csv")) %>% mutate(RUN=1:n())
+getout <- function(endpoint="NInd",appy = c(25*30+1,26*30),recy =c(26*30+1,27*30),allsum0,dirs,Exp.Matrix){
+  allsum0 <- read_all_flist(flist=grep("Grd__",list.files(paste0("/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run70","/0/")),value = T),Trt=F,dir="/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run70")
+  alltrt <- read_all_dirs(dirs,startT=appy[1]-1,stopT=recy[2],allsum0,endpoint=endpoint)
+  alltrtw <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+ ## allctrw <- cross_join(as.data.frame(ctrw),expand.grid(HCx=0,EP=c("Biomass","Mortality"),PCommunity="Calthion.txt"))
+  resdat1 <- alltrtw %>% filter(Time >= appy[1] & Time <=appy[2]) %>% group_by(HCx,EP,PCommunity) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean),pval=sum(`p-value`<0.01)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Application")
+  
+  resdat2 <- alltrtw %>% filter(Time >= recy[1] & Time <=recy[2]) %>% group_by(HCx,EP,PCommunity) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean),pval=sum(`p-value`<0.01)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Recovery")
+  resdat <- rbind(resdat1,resdat2)
+  return(resdat)
 }
-)
 
-
-# allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
-allsum0 <- allMC0 %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ),shannon=c(mean(shannon),std(shannon),quantile(shannon,c(0,0.25,0.5,0.75,1))))
-allsumw0 <- allsum0%>%pivot_wider(id_cols = Time,names_from = stats,values_from = totMass)
-
-
-ggplot(allsumw0%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alpha=0.1)+ylab("Mean Total Mass")
-
-ggplot(allsumw0%>%filter(Time>500),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>500),aes(x=Time,y=Mean),col=2)#+scale_y_log10()
 ```
-
 
 
 ```{r}
-ggplot(allsumw0%>%filter(Time>30*24),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>30*24),aes(x=Time,y=Mean),col=2)
+dirs <- paste0("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run",37:60)
+resdat <- getout(endpoint="NInd",allsum0=allsum0,dirs=dirs,Exp.Matrix = Exp.Matrix)
+pNInd <- resdat%>%ggplot(aes(x=HCx,y=value,col=`Yearly average`))+geom_point()+facet_grid(Year~EP)+ylab("NInd")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")
+
+resdat <- getout(endpoint="shanoon",allsum0=allsum0,dirs=dirs,Exp.Matrix = Exp.Matrix)
+pShannon <- resdat%>%ggplot(aes(x=HCx,y=value,col=`Yearly average`))+geom_point()+facet_grid(Year~EP)+ylab("NInd")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")
+
+resdat <- getout(endpoint="shanoon",allsum0=allsum0,dirs=dirs,Exp.Matrix = Exp.Matrix)
+pShannon <- resdat%>%ggplot(aes(x=HCx,y=value,col=`Yearly average`))+geom_point()+facet_grid(Year~EP)+ylab("NInd")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")
+
+endpoints <- c("totMass","NInd","shannon","NPFT")
+## change to abovemas
+endpoints <- c("abovemass","NInd","shannon","NPFT")
+resalll<- plyr::ldply(endpoints,function(x){
+  resdat <- getout(endpoint=x,allsum0=allsum0,dirs=dirs,Exp.Matrix = Exp.Matrix) %>% mutate(Endpoint=x)
+  return(resdat)
+})
 ```
 
+```{r}
+
+resalll%>%ggplot(aes(x=HCx,y=value,col=`Yearly average`))+geom_point()+facet_grid(EP+Year~Endpoint)+ylab("")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")
+ggsave("Calthion_HCx.png",width=9,height=6.5,dpi=300)
+
+
+resalll%>%replace_na(list(pval=0))%>%mutate(pval=pval<=1)%>%ggplot(aes(x=HCx,y=value,shape=`Yearly average`,col=factor(pval)))+geom_point(size=2)+facet_grid(EP+Year~Endpoint)+ylab("")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")
+
+
+ggsave("Calthion_HCx_pval.png",width=9,height=6.5,dpi=300)
+
+```
 
 
 ```{r}
-flist <- grep("Grd__",list.files(paste0("../Calthion/Run60","/1/")),value = T)
-allMC0 <- plyr::ldply(1:length(flist),function(j){
-  dat <- data.table::fread(paste0("../Calthion/Run60","/1/",flist[j]))
-  dat$MC <- j
-  return(dat)
-}
-)
-
-
-# allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
-allsum0 <- allMC0 %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),std(totMass),quantile(totMass,c(0,0.25,0.5,0.75,1))),stats=c("Mean","SE","Min.", "1st Qu.", "Median" ,    "3rd Qu.", "Max." ),shannon=c(mean(shannon),std(shannon),quantile(shannon,c(0,0.25,0.5,0.75,1))))
-allsumw0 <- allsum0%>%pivot_wider(id_cols = Time,names_from = stats,values_from = shannon)
-
-
-ggplot(allsumw0%>%filter(Time>500 & Time < 600),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`1st Qu.`,ymax=`3rd Qu.`),alpha=0.1)+ylab("Mean Shannon")
-
-ggplot(allsumw0%>%filter(Time>500),aes(x=Time,y=Mean))+geom_line()+geom_point()+geom_ribbon(aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1)+ylab("Mean Total Mass")+geom_line(data=allsumw%>%filter(Time>500),aes(x=Time,y=Mean),col=2)+geom_ribbon(data=allsumw%>%filter(Time>500),aes(ymin=`Min.`,ymax=`Max.`),alpha=0.1,col=2,fill="red")+ylab("Mean Total Mass")+xlim(c(700,800))#+scale_y_log10()
+library(patchwork)
 ```
+

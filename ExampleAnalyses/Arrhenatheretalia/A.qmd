@@ -1,0 +1,162 @@
+---
+title: "Calthion Post Analysis"
+description: |
+  Calthion Biomass Effects
+author: Zhenglei Gao
+affiliation: RS-DSDT
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    toc-depth: 4
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+knitr::opts_chunk$set(message=F,warning = F)
+```
+
+
+```{r}
+library(tidyverse)
+theme_set(theme_bw())
+```
+
+
+
+```{r}
+std <- function(x) sd(x)/sqrt(length(x))
+
+# m1, m2: the sample means
+# s1, s2: the sample standard deviations
+# n1, n2: the same sizes
+# m0: the null value for the difference in means to be tested for. Default is 0. 
+# equal.variance: whether or not to assume equal variance. Default is FALSE. 
+t.test2 <- function(m1,m2,s1,s2,n1,n2,m0=0,equal.variance=FALSE)
+{
+    if( equal.variance==FALSE ) 
+    {
+        se <- sqrt( (s1^2/n1) + (s2^2/n2) )
+        # welch-satterthwaite df
+        df <- ( (s1^2/n1 + s2^2/n2)^2 )/( (s1^2/n1)^2/(n1-1) + (s2^2/n2)^2/(n2-1) )
+    } else
+    {
+        # pooled standard deviation, scaled by the sample sizes
+        se <- sqrt( (1/n1 + 1/n2) * ((n1-1)*s1^2 + (n2-1)*s2^2)/(n1+n2-2) ) 
+        df <- n1+n2-2
+    }      
+    t <- (m1-m2-m0)/se 
+    dat <- c(m1-m2, se, t, 2*pt(-abs(t),df))    
+    names(dat) <- c("Difference of means", "Std Error", "t", "p-value")
+    return(dat) 
+}
+
+t.test3 <- function(x){
+  res<- t.test2(x[1],x[3],x[2],x[4],n1=30,n2=30)
+  res["p-value"]
+}
+mysum <- function(x){c(mean(x),sd(x),quantile(x,c(0,0.05,0.5,0.95,1)))}
+relctr <- function(ctr,trt){
+  (trt-ctr)/ctr
+}
+read_all_flist <- function(flist,Trt=TRUE,dir){
+  allMC <- plyr::ldply(1:length(flist),function(j){
+    if(Trt) dat <- data.table::fread(paste0(dir,"/1/",flist[j])) else{
+      dat <- data.table::fread(paste0(dir,"/0/",flist[j]))
+    }
+    dat$MC <- j
+    return(dat)
+  }
+  )
+  
+  
+  # allMC %>% as.tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
+  allsum <- allMC %>% as.tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),sd(totMass),quantile(totMass,c(0,0.05,0.5,0.95,1))),stats=c("Mean","SD","Min.", "5th Per.", "Median" ,    "95th Per.", "Max." ),abovemass=mysum(abovemass),belowmass=mysum(belowmass),shannon=mysum(shannon),NInd=mysum(NInd),NPFT=mysum(NPFT))
+  
+  return(allsum)
+}
+
+read_all_dirs <- function(dirs,startT=30*24,stopT=30*27,allsum0,endpoint="totMass"){
+  runind <- sapply(str_split(dirs,"/"),function(x) x[length(x)])
+  names(dirs) <- runind
+  ctr <- allsum0 %>%filter(Time>startT & Time < stopT)
+  ctrw <- ctr%>%pivot_wider(id_cols = Time,names_from = stats,values_from = endpoint)
+  alltrt <- plyr::ldply(dirs,function(x){
+    flist <- grep("Grd__",list.files(paste0(x,"/1/")),value = T)
+    flist <- grep("Scenario_1",flist,value=T)
+    allsum <- read_all_flist(flist,dir=x)
+    tmp <- rbind(allsum%>%filter(stats %in% c("Mean","SD"))%>%mutate(group="TRT"),allsum0%>%filter(stats %in% c("Mean","SD"))%>%mutate(group="CTR"))
+    tmp1 <- tmp %>% group_by(Time) %>% summarise_at(c("totMass","abovemass","belowmass","shannon","NInd","NPFT"),~t.test3(.x))%>%mutate(stats="p-value") %>% relocate(stats,.after = totMass)
+    allsum <- rbind(allsum,tmp1)
+    trt <- allsum %>%filter(Time>startT & Time < stopT)
+    trtw <- trt %>%pivot_wider(id_cols = Time,names_from = stats,values_from = endpoint)
+    trtw <- trtw %>% mutate(Ctr=ctrw$Mean) %>% mutate_at(c("Mean","5th Per.", "95th Per."),~relctr(.x,ctr=Ctr))
+    return(trtw)
+  })
+  return(alltrt)
+  
+}
+
+
+
+
+getout <- function(endpoint="NInd",appy = c(25*30+1,26*30),recy =c(26*30+1,27*30),allsum0,dirs,Exp.Matrix){
+  alltrt <- read_all_dirs(dirs,startT=appy[1]-1,stopT=recy[2],allsum0,endpoint=endpoint)
+  alltrtw <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+ ## allctrw <- cross_join(as.data.frame(ctrw),expand.grid(HCx=0,EP=c("Biomass","Mortality"),PCommunity="Calthion.txt"))
+  resdat1 <- alltrtw %>% filter(Time >= appy[1] & Time <=appy[2]) %>% group_by(HCx,EP,PCommunity) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean),pval=sum(`p-value`<0.01)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Application")
+  
+  resdat2 <- alltrtw %>% filter(Time >= recy[1] & Time <=recy[2]) %>% group_by(HCx,EP,PCommunity) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean),pval=sum(`p-value`<0.01)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Recovery")
+  resdat <- rbind(resdat1,resdat2)
+  return(resdat)
+}
+```
+
+
+```{r}
+
+flist <- grep("Grd__",list.files(paste0(dirs[i],"/1/")),value = T)
+```
+
+
+## SETAC Figure Preparation
+
+```{r}
+allsum0 <- read_all_flist(flist=grep("Grd__",list.files(paste0("/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Arrhenatheretalia/Run1","/0/")),value = T),Trt=F,dir="/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Arrhenatheretalia/Run1")
+```
+
+
+
+
+```{r}
+Exp.Matrix <- read_csv(paste0(proj_dir,"/ExampleAnalyses/Calthion/Exp.Matrix.csv")) %>% mutate(RUN=1:n())
+```
+
+
+```{r}
+dirs <- paste0("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/Arrhenatheretalia/Run",1:24)
+
+endpoints <- c("totMass","NInd","shannon","NPFT")
+resalll<- plyr::ldply(endpoints,function(x){
+  resdat <- getout(endpoint=x,allsum0=allsum0,dirs=dirs,Exp.Matrix = Exp.Matrix,
+                   appy = c(25*30+1,26*30),recy =c(26*30+1,27*30)) %>% mutate(Endpoint=x)
+  return(resdat)
+})
+```
+
+```{r}
+
+
+resalll%>%replace_na(list(pval=0))%>%mutate(pval=pval<=1)%>%ggplot(aes(x=HCx,y=value,shape=`Yearly average`,col=factor(pval)))+geom_point(size=2)+facet_grid(EP+Year~Endpoint)+ylab("")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")
+
+
+ggsave("Arrhenatheretalia_HCx_pval.png",width=9,height=6.5,dpi=300)
+
+```
+
+
+```{r}
+library(patchwork)
+```
+

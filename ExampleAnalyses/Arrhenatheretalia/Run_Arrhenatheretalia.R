@@ -36,7 +36,7 @@ ind <- which(Exp.Matrix$PCommunity=="Arrhenatheretalia.txt" & Exp.Matrix$EP%in% 
 
 
 # @Zhenglei we will need to load environment based on Exp.Matrix1$PCommunity
-load(paste0(sim_dir,"/SimEnvironments/F/HerbicideSettings/SimulationSettings.Rdata"))# just as an example for this script
+load(paste0(sim_dir,"/SimEnvironments/A/HerbicideSettings/SimulationSettings.Rdata"))# just as an example for this script
 
 ###################################
 ## Change the simulation time

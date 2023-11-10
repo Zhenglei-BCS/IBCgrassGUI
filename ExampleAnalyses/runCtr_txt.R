@@ -17,7 +17,7 @@
 #' @export
 #'
 #' @examples
-runctr <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
+runctr <- function(HCx=0,EP="Establishment",HT="R",PCommunity,
                    modelpath="/home/sagemaker-user/Projects/Research/IBCgrassGUI/Model-files/",
                    sim_dir="/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/",
                    sim_subpath="Test1",MCruns=2,SaveEnvironment,genHerbFile=FALSE,
@@ -67,8 +67,10 @@ runctr <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   if(genHerbFile) genHerbFactFile(EP=EP,file=paste0(modelpath,"HerbFact.txt")) else{
     ## use the copied Herbfile already copied before the MCruns.
     file.copy(paste0(proj_dir,useHerbFile),  modelpath)
+    print("copied herbfact file to model path")
   }
   
+  write.table(get("IBCcommunityFile", envir=SaveEnvironment), paste(modelpath,PFTfileName, sep=""), sep="\t", quote=F,row.names=F) # make sure the Model-files folder includes the file of your PFT community 
   
   copy <- file.copy(paste0(proj_dir,"Input-files/AppRate.txt"),  modelpath) ### There is no need for this correct!! this line could be commented out. 
   ## file.copy(paste0(proj_dir,"Input-files/HerbFact.txt"),  modelpath)
@@ -82,9 +84,24 @@ runctr <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   # change directory
   setwd(modelpath)
   scenario <- 0 
-  foreach(MC = 1:MCruns)  %dopar%
-    system(paste('wine ./IBCgrassGUI.exe', ModelVersion, GridSize, Tmax, InitDuration, PFTfileName, SeedInput, belowres, abres, abampl, tramp, graz, cut,
-                 week_start, HerbDuration, 0, EffectModel, scenario, MC, sep=" "), intern=T)
+  foreach(MC = 1:MCruns,.export=c("PFTfile", "PFTsensitivity", "PFTfileName", "EffectModel",
+                                  "ModelVersion", "belowres", "abres", "abampl", "Tmax", "InitDuration", "GridSize", "SeedInput",
+                                  "HerbDuration", "tramp", "graz", "cut", "week_start","HCx","HT",
+                                  "genSensitivity","genHerbFactFile"))  %dopar%
+    {
+      # system(paste('wine ./IBCgrassGUI.exe', ModelVersion, GridSize, Tmax, InitDuration, PFTfileName, 
+      #              SeedInput, belowres, abres, abampl, tramp, graz, cut,
+      #              week_start, HerbDuration, 0, EffectModel, scenario, MC, sep=" "), intern=T)
+      setwd(modelpath)
+      mycall<-paste('wine ./IBCgrassGUI.exe', ModelVersion, GridSize, Tmax, InitDuration, PFTfileName, 
+                    SeedInput, belowres, abres, abampl, tramp, graz, cut, 
+                    week_start, HerbDuration, 0, EffectModel, scenario, MC, sep=" ")
+      # start treatment run
+      system(mycall, intern=TRUE)
+    }
+
+  
+  
   stopCluster(cl)
   
  
@@ -93,11 +110,15 @@ runctr <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   #####
   ## dir.create("currentSimulation/0", recursive=TRUE)
   
-  dir.create(paste(sim_dir,sim_subpath,"/0", sep=""))
+  if(!dir.exists(paste(sim_dir,sim_subpath,"/0", sep=""))){
+    dir.create(paste(sim_dir,sim_subpath,"/0", sep=""))
+  }
   file_list <- list.files(path = "Model-files/", pattern="Pt__*")
+  print(file_list)
   for (file in file_list){
     path <- paste(sim_dir,sim_subpath,"/0", sep="")
     copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
+    cat("copied files to",sim_dir,sim_subpath,"/0")
     #  todo make sure that all files were copied!
     if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )              
   } 
@@ -106,6 +127,7 @@ runctr <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   for (file in file_list){
     path <- paste(sim_dir,sim_subpath,"/0", sep="")
     copy <- file.copy(paste("Model-files/" ,file , sep="") ,  path)
+    cat("copied files to",sim_dir,sim_subpath,"/0")
     #  todo make sure that all files were copied!
     if (copy==T) file.remove(paste("Model-files/" ,file , sep="") )              
   }
