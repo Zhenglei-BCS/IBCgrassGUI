@@ -1,3 +1,4 @@
+rm(list=ls())
 source("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/runTrt_txt.R")
 
 

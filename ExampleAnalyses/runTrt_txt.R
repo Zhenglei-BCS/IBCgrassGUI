@@ -10,18 +10,29 @@ genHerbFactFile <- function(EP="Establishment",file=NULL){
 genSensitivity <- function(n=100,HCx=0.05,HT="R"){
   if(HT=="R"){
     id <- 1:n
-    id1 <- 1:round(HCx*n,0)
-    id2 <- (round(HCx*n,0)+1):n
-    sensi <- rep(NA,n)
-    sensi[id1] <- ">25%"
-    sensi[id2] <- "<25%"
+    if(HCx==0){
+      sensi <- rep("<25%",n)
+    }else{
+      id1 <- 1:round(HCx*n,0)
+      if(HCx<1){
+        id2 <- (round(HCx*n,0)+1):n
+        sensi <- rep(NA,n)
+        sensi[id1] <- ">25%"
+        sensi[id2] <- "<25%"
+      }else{
+        sensi <- rep(">25%",n)
+      }
+    }
+
     sensi1 <- sensi[sample(n)]
   }
-  
+  if(HT=="F"){
+    
+  }
   return(sensi1)
 }
 
-#' Title
+#' Run treatment IBC
 #'
 #' @param HCx 
 #' @param EP 
@@ -83,7 +94,7 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
   
   # # cluster for parallel processing ==> go outside of the function
   ## no_cores <- max(detectCores()-2,1) # you might want to adapt this and give a specific number of cores (e.g. when using a HPC)
-  no_cores <- 30
+  no_cores <- 14
   cl <- makeCluster(no_cores)
   registerDoParallel(cl)
   
@@ -136,6 +147,8 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
         PFTfile[PFTfile$Sensitivity=="not affected",25] <- c(rep(0, nrow(PFTfile[PFTfile$Sensitivity=="not affected",])))
         PFTfile<-PFTfile[,-ncol(PFTfile)]
         PFTfile <- cbind(PFTfile[,c(2,1)],PFTfile[,-c(1:2)]) ## ??? I don't think it is doing anything other than change the order of the columns. 
+        #save PFT file
+        write.table(PFTfile, paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""), row.names=F, quote=F, sep="\t")
         
         
       }else{
@@ -149,30 +162,36 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
           # Initial assignment of sensitivite based on HCx (e.g., HCx=005 =>5% =>"High", 95% =>"Low")
           #PFTsensitivity$Sensitivity = genSensitivity(n=nrow(PFTsensitivity),HCx=HCx,HT="R")
           PFTfile$Sensitivity = genSensitivity(n=nrow(PFTfile),HCx=HCx,HT="R")
+          PFTfile[,25] <- 0
+          
+          # NEW - effect categories #### @Zhenglei this could be replace by sampling from the SSD probability distribution?
+          # set <25% values
+          PFTfile[PFTfile$Sensitivity=="<25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="<25%",]),  min = 0, max = 0.25))
+          # set >25% values
+          PFTfile[PFTfile$Sensitivity==">25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity==">25%",]),  min = 0.25, max = 1))
+          PFTfile<-PFTfile[,-ncol(PFTfile)]
+          
           
         }
         if (HT=="TMono"){} # need to split by mono/dicot, Mono get PFTfile$Sensitivity== 0, dicot get the rest (0 count to sum($Sensitivity=="<25%")) 
         if (HT=="TDicot"){} # need to split by mono/dicot, Dicot get PFTfile$Sensitivity== 0, monocot get the rest (0 count to sum($Sensitivity=="<25%"))
         
+        if (HT=="Fixed") {
+          #make sure, all values are set to 0 (no affect)
+          PFTfile[,25] <-HCx
+        }
         
-        #make sure, all values are set to 0 (no affect)
-        PFTfile[,25] <- 0
-        
-        # NEW - effect categories #### @Zhenglei this could be replace by sampling from the SSD probability distribution?
-        # set <25% values
-        PFTfile[PFTfile$Sensitivity=="<25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity=="<25%",]),  min = 0, max = 0.25))
-        # set >25% values
-        PFTfile[PFTfile$Sensitivity==">25%",25] <- c(runif(nrow(PFTfile[PFTfile$Sensitivity==">25%",]),  min = 0.25, max = 1))
-        PFTfile<-PFTfile[,-ncol(PFTfile)]
-        
+        if (HT=="CompletelyR"){
+          PFTfile[,25] <- runif(nrow(PFTfile),0,1)
+        }
+        #save PFT file
+        write.table(PFTfile, paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""), row.names=F, quote=F, sep="\t")
         
       }
       
       
 
-      #save PFT file
-      write.table(PFTfile[,-ncol(PFTfile)], paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""), row.names=F, quote=F, sep="\t")
-      
+    
       # copy necessary files to Model-files folder
       path <- modelpath
       copy <- file.copy(paste(unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""),  path)
@@ -195,7 +214,7 @@ runtrt <- function(HCx=0.05,EP="Establishment",HT="R",PCommunity,
       # remove old files
       #remove <- file.remove(paste(modelpath, unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""))
       file.remove(paste(modelpath, unlist(strsplit(PFTfileName,".txt")), MC, ".txt", sep=""))
-      if(genHerbFile) remove <- file.remove(paste0(proj_dir,"Model-files/HerbFact.txt"))
+      #if(genHerbFile) remove <- file.remove(paste0(proj_dir,"Model-files/HerbFact.txt"))
       #remove <- file.remove("Model-files/AppRate.txt")
     }
   

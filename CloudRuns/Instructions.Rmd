@@ -57,7 +57,7 @@ sudo apt update && sudo apt install wine32
 ## Example Run
 
 ```
-zhenglei_gao@ip-10-123-138-37:~/IBCgrassGUI/Model-files$ wine ./IBCgrassGUI.exe 3 173 50 35 Fieldedge.txt 10 90 100 0 0.1 0.01 1 1 10 0 2 0 1
+zhenglei_gao@ip-10-123-138-37:~/IBCgrassGUI/Model-files$ wine ./IBCgrassGUI.exe 3 173 50 35 Calthion.txt 10 90 100 0 0.1 0.01 1 1 10 0 2 0 1
 ```
 
 ## Error
@@ -73,6 +73,14 @@ rm -r .wine/
 sudo apt update && sudo apt install wine32
 ```
 
+## Error when runing
+
+
+```
+wine: Unhandled page fault on read access to 0xfffa0409 at address 0x42ee80 (thread 001b), starting debugger...
+001b:err:seh:start_debugger Couldn't start debugger ("winedbg --auto 26 36") (2)
+Read the Wine Developers Guide on how to set up winedbg or another debugger
+```
 
 ## Additional steps
 

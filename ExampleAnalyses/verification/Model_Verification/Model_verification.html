@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.1.251">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Model Verification</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="Model_verification_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Model_verification_files/libs/quarto-html/quarto.js"></script>
+<script src="Model_verification_files/libs/quarto-html/popper.min.js"></script>
+<script src="Model_verification_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Model_verification_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Model_verification_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Model_verification_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Model_verification_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Model_verification_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Model_verification_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Model Verification</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    
+  </div>
+  
+
+</header>
+
+<p>To check if the model has issues in simulating biomass effects, we have run the model using different settings of species sensitivity to see if high sensitivity corresponds to high level of effects.</p>
+<p>In case of HT being Fixed, the senstivitiy score is fixed as the specified HCx. In case of HT being R, the senstitivity score is generated using HCx as a threshold value, about HCx*100 % of the community plant species having scores genrated randomly between 0.25 and 1 and the rest between 0 and 0.25.</p>
+<section id="simulaton-settings" class="level2">
+<h2 class="anchored" data-anchor-id="simulaton-settings">Simulaton Settings</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>Exp.Matrix <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"~/Projects/Research/IBCgrassGUI/ExampleAnalyses/verification/Exp.Matrix.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>pander<span class="sc">::</span><span class="fu">pander</span>(Exp.Matrix)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 25%">
+<col style="width: 19%">
+<col style="width: 33%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">HCx</th>
+<th style="text-align: center;">EP</th>
+<th style="text-align: center;">HT</th>
+<th style="text-align: center;">PCommunity</th>
+<th style="text-align: center;">RUN</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">0.05</td>
+<td style="text-align: center;">Biomass</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">Biomass</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">Biomass</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.05</td>
+<td style="text-align: center;">Biomass</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Biomass</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">5</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Biomass</td>
+<td style="text-align: center;">CompletelyR</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">Mortality</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">7</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">Mortality</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">0.05</td>
+<td style="text-align: center;">Mortality</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">9</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Mortality</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Mortality</td>
+<td style="text-align: center;">CompletelyR</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">11</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">Establishment</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">12</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">Establishment</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.05</td>
+<td style="text-align: center;">Establishment</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">14</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Establishment</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">15</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Establishment</td>
+<td style="text-align: center;">CompletelyR</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">16</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">SeedlingBiomass</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.05</td>
+<td style="text-align: center;">SeedlingBiomass</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">18</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">SeedSterility</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">19</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.05</td>
+<td style="text-align: center;">SeedSterility</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">0.95</td>
+<td style="text-align: center;">SeedNumber</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">21</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">0.05</td>
+<td style="text-align: center;">SeedNumber</td>
+<td style="text-align: center;">Fixed</td>
+<td style="text-align: center;">Arrhenatheretalia.txt</td>
+<td style="text-align: center;">22</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="code-to-produce-results" class="level2">
+<h2 class="anchored" data-anchor-id="code-to-produce-results">Code to Produce Results</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>std <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sd</span>(x)<span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">length</span>(x))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># m1, m2: the sample means</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># s1, s2: the sample standard deviations</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># n1, n2: the same sizes</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># m0: the null value for the difference in means to be tested for. Default is 0. </span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># equal.variance: whether or not to assume equal variance. Default is FALSE. </span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>t.test2 <span class="ot">&lt;-</span> <span class="cf">function</span>(m1,m2,s1,s2,n1,n2,<span class="at">m0=</span><span class="dv">0</span>,<span class="at">equal.variance=</span><span class="cn">FALSE</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>( equal.variance<span class="sc">==</span><span class="cn">FALSE</span> ) </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    se <span class="ot">&lt;-</span> <span class="fu">sqrt</span>( (s1<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>n1) <span class="sc">+</span> (s2<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>n2) )</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># welch-satterthwaite df</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> ( (s1<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>n1 <span class="sc">+</span> s2<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>n2)<span class="sc">^</span><span class="dv">2</span> )<span class="sc">/</span>( (s1<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>n1)<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>(n1<span class="dv">-1</span>) <span class="sc">+</span> (s2<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>n2)<span class="sc">^</span><span class="dv">2</span><span class="sc">/</span>(n2<span class="dv">-1</span>) )</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># pooled standard deviation, scaled by the sample sizes</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    se <span class="ot">&lt;-</span> <span class="fu">sqrt</span>( (<span class="dv">1</span><span class="sc">/</span>n1 <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span>n2) <span class="sc">*</span> ((n1<span class="dv">-1</span>)<span class="sc">*</span>s1<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (n2<span class="dv">-1</span>)<span class="sc">*</span>s2<span class="sc">^</span><span class="dv">2</span>)<span class="sc">/</span>(n1<span class="sc">+</span>n2<span class="dv">-2</span>) ) </span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> n1<span class="sc">+</span>n2<span class="dv">-2</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  }      </span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  t <span class="ot">&lt;-</span> (m1<span class="sc">-</span>m2<span class="sc">-</span>m0)<span class="sc">/</span>se </span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">&lt;-</span> <span class="fu">c</span>(m1<span class="sc">-</span>m2, se, t, <span class="dv">2</span><span class="sc">*</span><span class="fu">pt</span>(<span class="sc">-</span><span class="fu">abs</span>(t),df))    </span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(dat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Difference of means"</span>, <span class="st">"Std Error"</span>, <span class="st">"t"</span>, <span class="st">"p-value"</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dat) </span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>t.test3 <span class="ot">&lt;-</span> <span class="cf">function</span>(x){</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>  res<span class="ot">&lt;-</span> <span class="fu">t.test2</span>(x[<span class="dv">1</span>],x[<span class="dv">3</span>],x[<span class="dv">2</span>],x[<span class="dv">4</span>],<span class="at">n1=</span><span class="dv">30</span>,<span class="at">n2=</span><span class="dv">30</span>)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>  res[<span class="st">"p-value"</span>]</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>mysum <span class="ot">&lt;-</span> <span class="cf">function</span>(x){<span class="fu">c</span>(<span class="fu">mean</span>(x),<span class="fu">sd</span>(x),<span class="fu">quantile</span>(x,<span class="fu">c</span>(<span class="dv">0</span>,<span class="fl">0.05</span>,<span class="fl">0.5</span>,<span class="fl">0.95</span>,<span class="dv">1</span>)))}</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>relctr <span class="ot">&lt;-</span> <span class="cf">function</span>(ctr,trt){</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>  (trt<span class="sc">-</span>ctr)<span class="sc">/</span>ctr</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>read_all_flist <span class="ot">&lt;-</span> <span class="cf">function</span>(flist,<span class="at">Trt=</span><span class="cn">TRUE</span>,dir){</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>  allMC <span class="ot">&lt;-</span> plyr<span class="sc">::</span><span class="fu">ldply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(flist),<span class="cf">function</span>(j){</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(Trt) dat <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">fread</span>(<span class="fu">paste0</span>(dir,<span class="st">"/1/"</span>,flist[j])) <span class="cf">else</span>{</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>      dat <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">fread</span>(<span class="fu">paste0</span>(dir,<span class="st">"/0/"</span>,flist[j]))</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>    dat<span class="sc">$</span>MC <span class="ot">&lt;-</span> j</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(dat)</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># allMC %&gt;% as_tibble()%&gt;% group_by(Time)%&gt;%summarise(totMass=mean(totMass))</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>  allsum <span class="ot">&lt;-</span> allMC <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>()<span class="sc">%&gt;%</span> <span class="fu">group_by</span>(Time)<span class="sc">%&gt;%</span><span class="fu">reframe</span>(<span class="at">totMass=</span><span class="fu">c</span>(<span class="fu">mean</span>(totMass),<span class="fu">sd</span>(totMass),<span class="fu">quantile</span>(totMass,<span class="fu">c</span>(<span class="dv">0</span>,<span class="fl">0.05</span>,<span class="fl">0.5</span>,<span class="fl">0.95</span>,<span class="dv">1</span>))),<span class="at">stats=</span><span class="fu">c</span>(<span class="st">"Mean"</span>,<span class="st">"SD"</span>,<span class="st">"Min."</span>, <span class="st">"5th Per."</span>, <span class="st">"Median"</span> ,    <span class="st">"95th Per."</span>, <span class="st">"Max."</span> ),<span class="at">abovemass=</span><span class="fu">mysum</span>(abovemass),<span class="at">belowmass=</span><span class="fu">mysum</span>(belowmass),<span class="at">shannon=</span><span class="fu">mysum</span>(shannon),<span class="at">NInd=</span><span class="fu">mysum</span>(NInd),<span class="at">NPFT=</span><span class="fu">mysum</span>(NPFT))</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(allsum)</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>read_all_dirs <span class="ot">&lt;-</span> <span class="cf">function</span>(dirs,<span class="at">startT=</span><span class="dv">30</span><span class="sc">*</span><span class="dv">24</span>,<span class="at">stopT=</span><span class="dv">30</span><span class="sc">*</span><span class="dv">27</span>,allsum0,<span class="at">endpoint=</span><span class="st">"totMass"</span>,<span class="at">relative=</span><span class="cn">TRUE</span>){</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>  runind <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">str_split</span>(dirs,<span class="st">"/"</span>),<span class="cf">function</span>(x) x[<span class="fu">length</span>(x)])</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(dirs) <span class="ot">&lt;-</span> runind</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(allsum0)){</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>    ctr <span class="ot">&lt;-</span> allsum0 <span class="sc">%&gt;%</span><span class="fu">filter</span>(Time<span class="sc">&gt;</span>startT <span class="sc">&amp;</span> Time <span class="sc">&lt;</span> stopT)</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>    ctrw <span class="ot">&lt;-</span> ctr<span class="sc">%&gt;%</span><span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> Time,<span class="at">names_from =</span> stats,<span class="at">values_from =</span> endpoint)</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>  alltrt <span class="ot">&lt;-</span> plyr<span class="sc">::</span><span class="fu">ldply</span>(dirs,<span class="cf">function</span>(x){</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>    flist <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">"Grd__"</span>,<span class="fu">list.files</span>(<span class="fu">paste0</span>(x,<span class="st">"/1/"</span>)),<span class="at">value =</span> T)</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>    flist <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">"Scenario_1"</span>,flist,<span class="at">value=</span>T)</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>    allsum <span class="ot">&lt;-</span> <span class="fu">read_all_flist</span>(flist,<span class="at">dir=</span>x)</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(allsum0)){</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>      tmp <span class="ot">&lt;-</span> <span class="fu">rbind</span>(allsum<span class="sc">%&gt;%</span><span class="fu">filter</span>(stats <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Mean"</span>,<span class="st">"SD"</span>))<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">group=</span><span class="st">"TRT"</span>),allsum0<span class="sc">%&gt;%</span><span class="fu">filter</span>(stats <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Mean"</span>,<span class="st">"SD"</span>))<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">group=</span><span class="st">"CTR"</span>))</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>      tmp1 <span class="ot">&lt;-</span> tmp <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(Time) <span class="sc">%&gt;%</span> <span class="fu">summarise_at</span>(<span class="fu">c</span>(<span class="st">"totMass"</span>,<span class="st">"abovemass"</span>,<span class="st">"belowmass"</span>,<span class="st">"shannon"</span>,<span class="st">"NInd"</span>,<span class="st">"NPFT"</span>),<span class="sc">~</span><span class="fu">t.test3</span>(.x))<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">stats=</span><span class="st">"p-value"</span>) <span class="sc">%&gt;%</span> <span class="fu">relocate</span>(stats,<span class="at">.after =</span> totMass)</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>    }<span class="cf">else</span>{</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>      tmp <span class="ot">&lt;-</span> allsum<span class="sc">%&gt;%</span><span class="fu">filter</span>(stats <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Mean"</span>,<span class="st">"SD"</span>))<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">group=</span><span class="st">"TRT"</span>)</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>      tmp1 <span class="ot">&lt;-</span> tmp <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(Time) <span class="sc">%&gt;%</span> <span class="fu">summarise_at</span>(<span class="fu">c</span>(<span class="st">"totMass"</span>,<span class="st">"abovemass"</span>,<span class="st">"belowmass"</span>,<span class="st">"shannon"</span>,<span class="st">"NInd"</span>,<span class="st">"NPFT"</span>),<span class="sc">~</span><span class="fu">t.test3</span>(.x))<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">stats=</span><span class="st">"p-value"</span>) <span class="sc">%&gt;%</span> <span class="fu">relocate</span>(stats,<span class="at">.after =</span> totMass)</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>    allsum <span class="ot">&lt;-</span> <span class="fu">rbind</span>(allsum,tmp1)</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>    trt <span class="ot">&lt;-</span> allsum <span class="sc">%&gt;%</span><span class="fu">filter</span>(Time<span class="sc">&gt;</span>startT <span class="sc">&amp;</span> Time <span class="sc">&lt;</span> stopT)</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>    trtw <span class="ot">&lt;-</span> trt <span class="sc">%&gt;%</span><span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> Time,<span class="at">names_from =</span> stats,<span class="at">values_from =</span> endpoint)</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(relative)trtw <span class="ot">&lt;-</span> trtw <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Ctr=</span>ctrw<span class="sc">$</span>Mean) <span class="sc">%&gt;%</span> <span class="fu">mutate_at</span>(<span class="fu">c</span>(<span class="st">"Mean"</span>,<span class="st">"5th Per."</span>, <span class="st">"95th Per."</span>),<span class="sc">~</span><span class="fu">relctr</span>(.x,<span class="at">ctr=</span>Ctr)) <span class="cf">else</span>{</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(trtw)</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(alltrt)</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>getout <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">endpoint=</span><span class="st">"NInd"</span>,<span class="at">appy =</span> <span class="fu">c</span>(<span class="dv">25</span><span class="sc">*</span><span class="dv">30</span><span class="sc">+</span><span class="dv">1</span>,<span class="dv">26</span><span class="sc">*</span><span class="dv">30</span>),<span class="at">recy =</span><span class="fu">c</span>(<span class="dv">26</span><span class="sc">*</span><span class="dv">30</span><span class="sc">+</span><span class="dv">1</span>,<span class="dv">27</span><span class="sc">*</span><span class="dv">30</span>),allsum0,dirs,Exp.Matrix){</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>  alltrt <span class="ot">&lt;-</span> <span class="fu">read_all_dirs</span>(dirs,<span class="at">startT=</span>appy[<span class="dv">1</span>]<span class="sc">-</span><span class="dv">1</span>,<span class="at">stopT=</span>recy[<span class="dv">2</span>],allsum0,<span class="at">endpoint=</span>endpoint)</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>  alltrtw <span class="ot">&lt;-</span> <span class="fu">left_join</span>(alltrt,Exp.Matrix<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">.id=</span><span class="fu">paste0</span>(<span class="st">"Run"</span>,RUN)))</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>  <span class="do">## allctrw &lt;- cross_join(as.data.frame(ctrw),expand.grid(HCx=0,EP=c("Biomass","Mortality"),PCommunity="Calthion.txt"))</span></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>  resdat1 <span class="ot">&lt;-</span> alltrtw <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Time <span class="sc">&gt;=</span> appy[<span class="dv">1</span>] <span class="sc">&amp;</span> Time <span class="sc">&lt;=</span>appy[<span class="dv">2</span>]) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(HCx,EP,PCommunity,HT) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">meandiff=</span><span class="fu">mean</span>(Mean),<span class="at">maxdiff=</span><span class="fu">min</span>(Mean),<span class="at">pval=</span><span class="fu">sum</span>(<span class="st">`</span><span class="at">p-value</span><span class="st">`</span><span class="sc">&lt;</span><span class="fl">0.01</span>)) <span class="sc">%&gt;%</span> <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(meandiff,maxdiff),<span class="at">names_to =</span> <span class="st">"Yearly average"</span>)<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">Year=</span><span class="st">"Application"</span>)</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>  resdat2 <span class="ot">&lt;-</span> alltrtw <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Time <span class="sc">&gt;=</span> recy[<span class="dv">1</span>] <span class="sc">&amp;</span> Time <span class="sc">&lt;=</span>recy[<span class="dv">2</span>]) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(HCx,EP,PCommunity,HT) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">meandiff=</span><span class="fu">mean</span>(Mean),<span class="at">maxdiff=</span><span class="fu">min</span>(Mean),<span class="at">pval=</span><span class="fu">sum</span>(<span class="st">`</span><span class="at">p-value</span><span class="st">`</span><span class="sc">&lt;</span><span class="fl">0.01</span>)) <span class="sc">%&gt;%</span> <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(meandiff,maxdiff),<span class="at">names_to =</span> <span class="st">"Yearly average"</span>)<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">Year=</span><span class="st">"Recovery"</span>)</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>  resdat <span class="ot">&lt;-</span> <span class="fu">rbind</span>(resdat1,resdat2)</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(resdat)</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"~/Projects/Research/IBCgrassGUI/ExampleAnalyses/runTrt_txt.R"</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="do">#####</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># libraries</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="do">#####</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(foreach)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(labeling)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="do">#####</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Notes</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="do">#####</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co"># -------------- Make sure to compile IBC before running this code ----------- #</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co"># ----------------- run Model-files/CompileIBC.bat --------------------------- #</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># code is copied/adapted from R-files/SimulationSpecificSettings.R</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="do">#####</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Load previously saved simulation settings </span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="do">#####</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># You can use the GUI to generate the SimulationSettings.Rdata</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># simply run a very small test script (min. repetitions, min. years, min. grid size) and save the project</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co"># You then might want to adapt some of the settings manually (e.g. increase repetitions, number of simulated years etc.)</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="co">#NEW ####</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>proj_dir <span class="ot">&lt;-</span> <span class="st">"/home/sagemaker-user/Projects/Research/IBCgrassGUI"</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>sim_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(proj_dir,<span class="st">"/ExampleAnalyses/verification/"</span>)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>path <span class="ot">&lt;-</span> <span class="st">"Model-files/"</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>modelpath <span class="ot">&lt;-</span> <span class="fu">paste0</span>(proj_dir,<span class="st">"/Model-files/"</span>)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="fu">setwd</span>(proj_dir)</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="fu">paste0</span>(sim_dir,<span class="st">"/SimEnvironments/A/HerbicideSettings/SimulationSettings.Rdata"</span>))<span class="co"># just as an example for this script</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="do">## Change the simulation time</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="co">#week_start &lt;- get("IBCweekstart", envir=SaveEnvironment)-10 # start of the herbicide application (calendar week); note that IBC only simulate growing period</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>IBCweekstart <span class="ot">&lt;-</span> <span class="dv">11</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>IBCRecovery <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="co"># recovery duration [years]</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>InitDuration <span class="ot">&lt;-</span> <span class="fu">get</span>(<span class="st">"IBCInit"</span>, <span class="at">envir=</span>SaveEnvironment) </span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>IBCInit <span class="ot">&lt;-</span> <span class="dv">5</span> <span class="co"># intial years </span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>BiomassEff</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>BiomassEffFile</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>SurvivalEff</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>EstablishmentEff</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>EstablishmentEffFile</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>SeedNumberEff</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>EffectData</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>SaveEnvironment<span class="sc">$</span>IBCrepetition <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a><span class="co">#Tmax &lt;- InitDuration + HerbDuration + RecovDuration # years to simulate</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>start_time <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>,<span class="dv">7</span><span class="sc">:</span><span class="dv">16</span>)</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> ind){</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>  <span class="do">######################################################################################</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>  HCx <span class="ot">&lt;-</span> Exp.Matrix<span class="sc">$</span>HCx[i]</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>  EP <span class="ot">&lt;-</span> Exp.Matrix<span class="sc">$</span>EP[i]</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>  HT <span class="ot">&lt;-</span> Exp.Matrix<span class="sc">$</span>HT[i]</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>  PCommunity <span class="ot">&lt;-</span> Exp.Matrix<span class="sc">$</span>PCommunity[i]</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setwd</span>(proj_dir)</span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">runtrt</span>(<span class="at">HCx=</span>HCx,<span class="at">EP=</span>EP,<span class="at">HT=</span>HT,<span class="at">PCommunity=</span>PCommunity,</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>         <span class="at">modelpath=</span><span class="st">"/home/sagemaker-user/Projects/Research/IBCgrassGUI/Model-files/"</span>,</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>         <span class="at">sim_dir=</span><span class="st">"/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/verification/"</span>,</span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>         <span class="at">sim_subpath=</span><span class="fu">paste0</span>(<span class="st">"Run"</span>,i),<span class="at">MCruns=</span><span class="dv">20</span>,<span class="at">SaveEnvironment=</span>SaveEnvironment,</span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>         <span class="at">genHerbFile =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>         <span class="at">proj_dir =</span> <span class="st">"~/Projects/Research/IBCgrassGUI/"</span>,</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>         <span class="at">useHerbFile =</span> <span class="st">"ExampleAnalyses/Arrhenatheretalia/SimEnvironments/A/HerbicideSettings/HerbFact.txt"</span>)</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.remove</span>(<span class="fu">paste0</span>(proj_dir,<span class="st">"/"</span>,<span class="fu">grep</span>(<span class="st">"Arrhenatheretalia*"</span>,<span class="fu">list.files</span>(proj_dir),<span class="at">value=</span>T)))</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dirs <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"~/Projects/Research/IBCgrassGUI/ExampleAnalyses/verification/Run"</span>,<span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>,<span class="dv">7</span><span class="sc">:</span><span class="dv">22</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>alltrt <span class="ot">&lt;-</span> <span class="fu">read_all_dirs</span>(dirs,<span class="at">startT=</span><span class="dv">30</span><span class="sc">*</span><span class="dv">3</span>,<span class="at">stopT=</span><span class="dv">30</span><span class="sc">*</span><span class="dv">7</span>,<span class="at">allsum0=</span><span class="cn">NULL</span>,<span class="at">endpoint=</span><span class="st">"totMass"</span>,<span class="at">relative =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>alltrtw1 <span class="ot">&lt;-</span> <span class="fu">left_join</span>(alltrt,Exp.Matrix<span class="sc">%&gt;%</span><span class="fu">mutate</span>(<span class="at">.id=</span><span class="fu">paste0</span>(<span class="st">"Run"</span>,RUN)))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#ggplot(alltrtw1,aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=EP))+geom_point(aes(x=Time,y=Mean,col=EP))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(EP~HT)+ylab("Total Mass")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(alltrtw1<span class="sc">%&gt;%</span> <span class="fu">filter</span>(EP<span class="sc">==</span><span class="st">"Mortality"</span> <span class="sc">&amp;</span> HT <span class="sc">!=</span> <span class="st">"CompletelyR"</span>),<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean))<span class="sc">+</span><span class="fu">annotate</span>(<span class="st">"rect"</span>, <span class="at">xmin =</span> <span class="dv">5</span><span class="sc">*</span><span class="dv">30</span>, <span class="at">xmax =</span> <span class="dv">6</span><span class="sc">*</span><span class="dv">30</span>, <span class="at">ymin =</span> <span class="sc">-</span><span class="cn">Inf</span>, <span class="at">ymax =</span> <span class="cn">Inf</span>,<span class="at">alpha =</span> .<span class="dv">1</span>,<span class="at">fill =</span> <span class="st">"blue"</span>)<span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean,<span class="at">col=</span><span class="fu">factor</span>(HCx)))<span class="sc">+</span><span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean,<span class="at">col=</span><span class="fu">factor</span>(HCx)))<span class="sc">+</span><span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin=</span><span class="st">`</span><span class="at">5th Per.</span><span class="st">`</span>,<span class="at">ymax=</span><span class="st">`</span><span class="at">95th Per.</span><span class="st">`</span>,<span class="at">fill=</span><span class="fu">factor</span>(HCx)),<span class="at">alpha=</span><span class="fl">0.1</span>)<span class="sc">+</span><span class="fu">facet_grid</span>(HT<span class="sc">~</span>.)<span class="sc">+</span><span class="fu">ylab</span>(<span class="st">"Total Mass"</span>)<span class="sc">+</span><span class="fu">xlim</span>(<span class="fu">c</span>(<span class="dv">120</span>,<span class="dv">200</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Model_verification_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(alltrtw1<span class="sc">%&gt;%</span> <span class="fu">filter</span>(HCx<span class="sc">==</span><span class="fl">0.95</span> <span class="sc">&amp;</span> HT <span class="sc">!=</span> <span class="st">"CompletelyR"</span>),<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean))<span class="sc">+</span><span class="fu">annotate</span>(<span class="st">"rect"</span>, <span class="at">xmin =</span> <span class="dv">5</span><span class="sc">*</span><span class="dv">30</span>, <span class="at">xmax =</span> <span class="dv">6</span><span class="sc">*</span><span class="dv">30</span>, <span class="at">ymin =</span> <span class="sc">-</span><span class="cn">Inf</span>, <span class="at">ymax =</span> <span class="cn">Inf</span>,<span class="at">alpha =</span> .<span class="dv">1</span>,<span class="at">fill =</span> <span class="st">"blue"</span>)<span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean,<span class="at">col=</span><span class="fu">factor</span>(EP)))<span class="sc">+</span><span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean,<span class="at">col=</span><span class="fu">factor</span>(EP)))<span class="sc">+</span><span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin=</span><span class="st">`</span><span class="at">5th Per.</span><span class="st">`</span>,<span class="at">ymax=</span><span class="st">`</span><span class="at">95th Per.</span><span class="st">`</span>,<span class="at">fill=</span><span class="fu">factor</span>(EP)),<span class="at">alpha=</span><span class="fl">0.1</span>)<span class="sc">+</span><span class="fu">facet_grid</span>(HT<span class="sc">~</span>.)<span class="sc">+</span><span class="fu">ylab</span>(<span class="st">"Total Mass"</span>)<span class="sc">+</span><span class="fu">xlim</span>(<span class="fu">c</span>(<span class="dv">120</span>,<span class="dv">200</span>))<span class="sc">+</span><span class="fu">ggtitle</span>(<span class="st">"HCx==.95"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Model_verification_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(alltrtw1<span class="sc">%&gt;%</span> <span class="fu">filter</span>(HCx<span class="sc">==</span><span class="fl">0.05</span> <span class="sc">&amp;</span> HT <span class="sc">==</span> <span class="st">"Fixed"</span>),<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean))<span class="sc">+</span><span class="fu">annotate</span>(<span class="st">"rect"</span>, <span class="at">xmin =</span> <span class="dv">5</span><span class="sc">*</span><span class="dv">30</span>, <span class="at">xmax =</span> <span class="dv">6</span><span class="sc">*</span><span class="dv">30</span>, <span class="at">ymin =</span> <span class="sc">-</span><span class="cn">Inf</span>, <span class="at">ymax =</span> <span class="cn">Inf</span>,<span class="at">alpha =</span> .<span class="dv">1</span>,<span class="at">fill =</span> <span class="st">"blue"</span>)<span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean,<span class="at">col=</span><span class="fu">factor</span>(EP)))<span class="sc">+</span><span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x=</span>Time,<span class="at">y=</span>Mean,<span class="at">col=</span><span class="fu">factor</span>(EP)))<span class="sc">+</span><span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin=</span><span class="st">`</span><span class="at">5th Per.</span><span class="st">`</span>,<span class="at">ymax=</span><span class="st">`</span><span class="at">95th Per.</span><span class="st">`</span>,<span class="at">fill=</span><span class="fu">factor</span>(EP)),<span class="at">alpha=</span><span class="fl">0.1</span>)<span class="sc">+</span><span class="fu">facet_grid</span>(HT<span class="sc">~</span>.)<span class="sc">+</span><span class="fu">ylab</span>(<span class="st">"Total Mass"</span>)<span class="sc">+</span><span class="fu">xlim</span>(<span class="fu">c</span>(<span class="dv">120</span>,<span class="dv">200</span>))<span class="sc">+</span><span class="fu">ggtitle</span>(<span class="st">"HCx==.05"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Model_verification_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
