@@ -1,6 +1,8 @@
 ---
 title: "Model Verification"
-format: html
+format: 
+  html:
+    embed-resources: true
 editor: visual
 ---
 
@@ -212,15 +214,21 @@ alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
 
 
 ```{r}
+#| label: fig-charts
+#| fig-cap: "Total Mass Response with Mortality Effect "
 ggplot(alltrtw1%>% filter(EP=="Mortality" & HT != "CompletelyR"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))
 ```
 
 
 ```{r}
+#| label: fig-EP
+#| fig-cap: "Total Mass Response with different Effects "
 ggplot(alltrtw1%>% filter(HCx==0.95 & HT != "CompletelyR"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(EP)))+geom_point(aes(x=Time,y=Mean,col=factor(EP)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(EP)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("HCx==.95")
 ```
 
 ```{r}
+#| label: fig-EP2
+#| fig-cap: "Total Mass Response with Mortality Effect"
 ggplot(alltrtw1%>% filter(HCx==0.05 & HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(EP)))+geom_point(aes(x=Time,y=Mean,col=factor(EP)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(EP)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("HCx==.05")
 ```
 
