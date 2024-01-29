@@ -6,15 +6,17 @@ format:
 editor: visual
 ---
 
+- Present other endpoints for example above and below biomass. 
+- Only fixed 0.95 and 0.05. 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE,message=FALSE)
 library(tidyverse)
 ```
 
-
 To check if the model has issues in simulating biomass effects, we have run the model using different settings of species sensitivity to see if high sensitivity corresponds to high level of effects.
 
-In case of HT being Fixed, the senstivitiy score is fixed as the specified HCx. In case of HT being R, the senstitivity score is generated using HCx as a threshold value, about HCx*100 % of the community plant species having scores genrated randomly between 0.25 and 1 and the rest between 0 and 0.25. 
+In case of HT being Fixed, the senstivitiy score is fixed as the specified HCx. In case of HT being R, the senstitivity score is generated using HCx as a threshold value, about HCx\*100 % of the community plant species having scores genrated randomly between 0.25 and 1 and the rest between 0 and 0.25.
 
 ## Simulaton Settings
 
@@ -25,7 +27,6 @@ Exp.Matrix <- read_csv("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/verifica
 ```{r}
 pander::pander(Exp.Matrix)
 ```
-
 
 ## Code to Produce Results
 
@@ -126,8 +127,6 @@ getout <- function(endpoint="NInd",appy = c(25*30+1,26*30),recy =c(26*30+1,27*30
 }
 ```
 
-
-
 ```{r eval=FALSE}
 source("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/runTrt_txt.R")
 
@@ -202,7 +201,6 @@ for(i in ind){
 
 ```
 
-
 ## Results
 
 ```{r}
@@ -212,13 +210,11 @@ alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
 #ggplot(alltrtw1,aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=EP))+geom_point(aes(x=Time,y=Mean,col=EP))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(EP~HT)+ylab("Total Mass")
 ```
 
-
 ```{r}
 #| label: fig-charts
 #| fig-cap: "Total Mass Response with Mortality Effect "
 ggplot(alltrtw1%>% filter(EP=="Mortality" & HT != "CompletelyR"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))
 ```
-
 
 ```{r}
 #| label: fig-EP
@@ -231,6 +227,3 @@ ggplot(alltrtw1%>% filter(HCx==0.95 & HT != "CompletelyR"),aes(x=Time,y=Mean))+a
 #| fig-cap: "Total Mass Response with Mortality Effect"
 ggplot(alltrtw1%>% filter(HCx==0.05 & HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(EP)))+geom_point(aes(x=Time,y=Mean,col=factor(EP)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(EP)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("HCx==.05")
 ```
-
-
-

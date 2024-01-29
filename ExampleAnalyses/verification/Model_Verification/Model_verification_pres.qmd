@@ -1,0 +1,218 @@
+---
+title: "Model Verification"
+format:
+  revealjs:
+    transition: slide
+    transition-speed: fast
+    standalone: true
+    embed-resources: true
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Results: Mortality
+
+```{r}
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE,message=FALSE)
+library(tidyverse)
+```
+
+```{r include=FALSE}
+std <- function(x) sd(x)/sqrt(length(x))
+
+# m1, m2: the sample means
+# s1, s2: the sample standard deviations
+# n1, n2: the same sizes
+# m0: the null value for the difference in means to be tested for. Default is 0. 
+# equal.variance: whether or not to assume equal variance. Default is FALSE. 
+t.test2 <- function(m1,m2,s1,s2,n1,n2,m0=0,equal.variance=FALSE)
+{
+  if( equal.variance==FALSE ) 
+  {
+    se <- sqrt( (s1^2/n1) + (s2^2/n2) )
+    # welch-satterthwaite df
+    df <- ( (s1^2/n1 + s2^2/n2)^2 )/( (s1^2/n1)^2/(n1-1) + (s2^2/n2)^2/(n2-1) )
+  } else
+  {
+    # pooled standard deviation, scaled by the sample sizes
+    se <- sqrt( (1/n1 + 1/n2) * ((n1-1)*s1^2 + (n2-1)*s2^2)/(n1+n2-2) ) 
+    df <- n1+n2-2
+  }      
+  t <- (m1-m2-m0)/se 
+  dat <- c(m1-m2, se, t, 2*pt(-abs(t),df))    
+  names(dat) <- c("Difference of means", "Std Error", "t", "p-value")
+  return(dat) 
+}
+
+t.test3 <- function(x){
+  res<- t.test2(x[1],x[3],x[2],x[4],n1=30,n2=30)
+  res["p-value"]
+}
+mysum <- function(x){c(mean(x),sd(x),quantile(x,c(0,0.05,0.5,0.95,1)))}
+relctr <- function(ctr,trt){
+  (trt-ctr)/ctr
+}
+read_all_flist <- function(flist,Trt=TRUE,dir){
+  allMC <- plyr::ldply(1:length(flist),function(j){
+    if(Trt) dat <- data.table::fread(paste0(dir,"/1/",flist[j])) else{
+      dat <- data.table::fread(paste0(dir,"/0/",flist[j]))
+    }
+    dat$MC <- j
+    return(dat)
+  }
+  )
+  
+  
+  # allMC %>% as_tibble()%>% group_by(Time)%>%summarise(totMass=mean(totMass))
+  allsum <- allMC %>% as_tibble()%>% group_by(Time)%>%reframe(totMass=c(mean(totMass),sd(totMass),quantile(totMass,c(0,0.05,0.5,0.95,1))),stats=c("Mean","SD","Min.", "5th Per.", "Median" ,    "95th Per.", "Max." ),abovemass=mysum(abovemass),belowmass=mysum(belowmass),shannon=mysum(shannon),NInd=mysum(NInd),NPFT=mysum(NPFT))
+  
+  return(allsum)
+}
+
+read_all_dirs <- function(dirs,startT=30*24,stopT=30*27,allsum0,endpoint="totMass",relative=TRUE){
+  runind <- sapply(str_split(dirs,"/"),function(x) x[length(x)])
+  names(dirs) <- runind
+  if(!is.null(allsum0)){
+    ctr <- allsum0 %>%filter(Time>startT & Time < stopT)
+    ctrw <- ctr%>%pivot_wider(id_cols = Time,names_from = stats,values_from = endpoint)
+  }
+  alltrt <- plyr::ldply(dirs,function(x){
+    flist <- grep("Grd__",list.files(paste0(x,"/1/")),value = T)
+    flist <- grep("Scenario_1",flist,value=T)
+    allsum <- read_all_flist(flist,dir=x)
+    if(!is.null(allsum0)){
+      tmp <- rbind(allsum%>%filter(stats %in% c("Mean","SD"))%>%mutate(group="TRT"),allsum0%>%filter(stats %in% c("Mean","SD"))%>%mutate(group="CTR"))
+      tmp1 <- tmp %>% group_by(Time) %>% summarise_at(c("totMass","abovemass","belowmass","shannon","NInd","NPFT"),~t.test3(.x))%>%mutate(stats="p-value") %>% relocate(stats,.after = totMass)
+    }else{
+      tmp <- allsum%>%filter(stats %in% c("Mean","SD"))%>%mutate(group="TRT")
+      tmp1 <- tmp %>% group_by(Time) %>% summarise_at(c("totMass","abovemass","belowmass","shannon","NInd","NPFT"),~t.test3(.x))%>%mutate(stats="p-value") %>% relocate(stats,.after = totMass)
+    }
+    allsum <- rbind(allsum,tmp1)
+    trt <- allsum %>%filter(Time>startT & Time < stopT)
+    trtw <- trt %>%pivot_wider(id_cols = Time,names_from = stats,values_from = endpoint)
+    if(relative)trtw <- trtw %>% mutate(Ctr=ctrw$Mean) %>% mutate_at(c("Mean","5th Per.", "95th Per."),~relctr(.x,ctr=Ctr)) else{
+      
+    }
+    return(trtw)
+  })
+  return(alltrt)
+  
+}
+
+
+
+
+getout <- function(endpoint="NInd",appy = c(25*30+1,26*30),recy =c(26*30+1,27*30),allsum0,dirs,Exp.Matrix){
+  alltrt <- read_all_dirs(dirs,startT=appy[1]-1,stopT=recy[2],allsum0,endpoint=endpoint)
+  alltrtw <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+  ## allctrw <- cross_join(as.data.frame(ctrw),expand.grid(HCx=0,EP=c("Biomass","Mortality"),PCommunity="Calthion.txt"))
+  resdat1 <- alltrtw %>% filter(Time >= appy[1] & Time <=appy[2]) %>% group_by(HCx,EP,PCommunity,HT) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean),pval=sum(`p-value`<0.01)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Application")
+  
+  resdat2 <- alltrtw %>% filter(Time >= recy[1] & Time <=recy[2]) %>% group_by(HCx,EP,PCommunity,HT) %>% summarise(meandiff=mean(Mean),maxdiff=min(Mean),pval=sum(`p-value`<0.01)) %>% pivot_longer(cols = c(meandiff,maxdiff),names_to = "Yearly average")%>%mutate(Year="Recovery")
+  resdat <- rbind(resdat1,resdat2)
+  return(resdat)
+}
+```
+
+.caption{
+   text-align: center;
+}
+
+
+```{r include=FALSE}
+theme_set(theme_bw())
+Exp.Matrix <- read_csv("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/verification/Exp.Matrix.csv")
+dirs <- paste0("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/verification/Run",c(1:5,7:22))
+alltrt <- read_all_dirs(dirs,startT=30*3,stopT=30*7,allsum0=NULL,endpoint="totMass",relative = FALSE)
+alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+#ggplot(alltrtw1,aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=EP))+geom_point(aes(x=Time,y=Mean,col=EP))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(EP~HT)+ylab("Total Mass")
+```
+
+
+
+```{r}
+#| label: fig-charts
+#| fig-cap: "Total Mass Response with Mortality Effect "
+ggplot(alltrtw1%>% filter(EP=="Mortality" & HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("Looking at Mortality Alone")
+```
+## Results: Effect parameters
+
+```{r}
+#| label: fig-EP
+#| fig-cap: "Total Mass Response with different Effects "
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(EP)))+geom_point(aes(x=Time,y=Mean,col=factor(EP)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(EP)),alpha=0.1)+facet_grid(HCx~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+```
+
+## Looking at each EP
+
+
+```{r}
+#| label: fig-EP2
+#| fig-cap: "Total Mass Response with different Effects "
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+```
+
+
+
+
+## Above Mass
+
+
+```{r include=F}
+## totMass	NInd	abovemass	belowmass	mean_ares	mean_bres	shannon	meanShannon	NPFT	meanNPFT	Cutted	NNonClonal	NClonal	mean_generation	mean_genet_size	NGenets
+alltrt <- read_all_dirs(dirs,startT=30*3,stopT=30*7,allsum0=NULL,endpoint="abovemass",relative = FALSE)
+alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+```
+
+```{r}
+#| label: fig-abovemass
+#| fig-cap: "Total Mass Response with different Effects "
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Above Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+```
+## Below Mass
+
+```{r include=F}
+## totMass	NInd	abovemass	belowmass	mean_ares	mean_bres	shannon	meanShannon	NPFT	meanNPFT	Cutted	NNonClonal	NClonal	mean_generation	mean_genet_size	NGenets
+alltrt <- read_all_dirs(dirs,startT=30*3,stopT=30*7,allsum0=NULL,endpoint="belowmass",relative = FALSE)
+alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+```
+
+```{r}
+#| label: fig-belowmass
+#| fig-cap: "Above Mass Response with different Effects "
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Below Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+```
+
+## Shannon
+
+```{r include=F}
+## totMass	NInd	abovemass	belowmass	mean_ares	mean_bres	shannon	meanShannon	NPFT	meanNPFT	Cutted	NNonClonal	NClonal	mean_generation	mean_genet_size	NGenets
+alltrt <- read_all_dirs(dirs,startT=30*3,stopT=30*7,allsum0=NULL,endpoint="shannon",relative = FALSE)
+alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+```
+
+```{r}
+#| label: fig-Shannon
+#| fig-cap: "Shannon Response with different Effects "
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Shannon")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+```
+
+## NPFT
+
+```{r include=F}
+## totMass	NInd	abovemass	belowmass	mean_ares	mean_bres	shannon	meanShannon	NPFT	meanNPFT	Cutted	NNonClonal	NClonal	mean_generation	mean_genet_size	NGenets
+alltrt <- read_all_dirs(dirs,startT=30*3,stopT=30*7,allsum0=NULL,endpoint="NPFT",relative = FALSE)
+alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
+```
+
+```{r}
+#| label: fig-NPFT
+#| fig-cap: "NPFT Response with different Effects "
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("NPFT")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+```
