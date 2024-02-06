@@ -17,7 +17,6 @@ editor_options:
 
 ```
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE,message=FALSE)
 library(tidyverse)
@@ -120,11 +119,6 @@ getout <- function(endpoint="NInd",appy = c(25*30+1,26*30),recy =c(26*30+1,27*30
 }
 ```
 
-.caption{
-   text-align: center;
-}
-
-
 ```{r include=FALSE}
 theme_set(theme_bw())
 Exp.Matrix <- read_csv("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/verification/Exp.Matrix.csv")
@@ -134,35 +128,29 @@ alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
 #ggplot(alltrtw1,aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=EP))+geom_point(aes(x=Time,y=Mean,col=EP))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(EP~HT)+ylab("Total Mass")
 ```
 
-
-
 ```{r}
 #| label: fig-charts
 #| fig-cap: "Total Mass Response with Mortality Effect "
-ggplot(alltrtw1%>% filter(EP=="Mortality" & HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("Looking at Mortality Alone")
+ggplot(alltrtw1%>% filter(EP=="Mortality" & HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_grid(HT~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("Looking at Mortality Alone")+labs(color="Sensitivity Level",fill="Sensitivity Level")
 ```
+
 ## Results: Effect parameters
 
 ```{r}
 #| label: fig-EP
 #| fig-cap: "Total Mass Response with different Effects "
-ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(EP)))+geom_point(aes(x=Time,y=Mean,col=factor(EP)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(EP)),alpha=0.1)+facet_grid(HCx~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(EP)))+geom_point(aes(x=Time,y=Mean,col=factor(EP)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(EP)),alpha=0.1)+facet_grid(HCx~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("Sensitivity: 0.05 vs. 0.95")
 ```
 
 ## Looking at each EP
 
-
 ```{r}
 #| label: fig-EP2
 #| fig-cap: "Total Mass Response with different Effects "
-ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Total Mass")+xlim(c(120,200))+ggtitle("Sensitivity==0.05 vs. 0.95")+labs(color="Sensitivity Level",fill="Sensitivity Level")
 ```
 
-
-
-
 ## Above Mass
-
 
 ```{r include=F}
 ## totMass	NInd	abovemass	belowmass	mean_ares	mean_bres	shannon	meanShannon	NPFT	meanNPFT	Cutted	NNonClonal	NClonal	mean_generation	mean_genet_size	NGenets
@@ -173,8 +161,9 @@ alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
 ```{r}
 #| label: fig-abovemass
 #| fig-cap: "Total Mass Response with different Effects "
-ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Above Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Above Mass")+xlim(c(120,200))+ggtitle("Sensitivity==0.05 vs. 0.95")+labs(color="Sensitivity Level",fill="Sensitivity Level")
 ```
+
 ## Below Mass
 
 ```{r include=F}
@@ -186,7 +175,7 @@ alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
 ```{r}
 #| label: fig-belowmass
 #| fig-cap: "Above Mass Response with different Effects "
-ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Below Mass")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Below Mass")+xlim(c(120,200))+ggtitle("Sensitivity: 0.05 vs. 0.95")+labs(color="Sensitivity Level",fill="Sensitivity Level")
 ```
 
 ## Shannon
@@ -200,7 +189,7 @@ alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
 ```{r}
 #| label: fig-Shannon
 #| fig-cap: "Shannon Response with different Effects "
-ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Shannon")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("Shannon")+xlim(c(120,200))+ggtitle("Sensitivity==0.05 vs. 0.95")+labs(color="Sensitivity Level",fill="Sensitivity Level")
 ```
 
 ## NPFT
@@ -214,5 +203,5 @@ alltrtw1 <- left_join(alltrt,Exp.Matrix%>%mutate(.id=paste0("Run",RUN)))
 ```{r}
 #| label: fig-NPFT
 #| fig-cap: "NPFT Response with different Effects "
-ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("NPFT")+xlim(c(120,200))+ggtitle("HCx==0.05 vs. 0.95")
+ggplot(alltrtw1%>% filter(HT == "Fixed"),aes(x=Time,y=Mean))+annotate("rect", xmin = 5*30, xmax = 6*30, ymin = -Inf, ymax = Inf,alpha = .1,fill = "blue")+geom_line(aes(x=Time,y=Mean,col=factor(HCx)))+geom_point(aes(x=Time,y=Mean,col=factor(HCx)))+geom_ribbon(aes(ymin=`5th Per.`,ymax=`95th Per.`,fill=factor(HCx)),alpha=0.1)+facet_wrap(EP~.)+ylab("NPFT")+xlim(c(120,200))+ggtitle("Sensitivity: 0.05 vs. 0.95")+labs(color="Sensitivity Level",fill="Sensitivity Level")
 ```
