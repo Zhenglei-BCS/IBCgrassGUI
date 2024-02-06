@@ -13,8 +13,12 @@ editor_options:
 
 ## Results: Mortality
 
-```{r}
 
+```{css}
+/*| echo: false */
+.caption{
+   text-align: center;
+}
 ```
 
 ```{r setup, include=FALSE}
