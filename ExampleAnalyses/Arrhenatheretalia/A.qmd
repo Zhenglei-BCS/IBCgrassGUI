@@ -115,7 +115,7 @@ getout <- function(endpoint="NInd",appy = c(25*30+1,26*30),recy =c(26*30+1,27*30
 
 
 ```{r}
-
+dirs <- paste0("~/Projects/Research/IBCgrassGUI/ExampleAnalyses/Arrhenatheretalia/Run",1:24)
 flist <- grep("Grd__",list.files(paste0(dirs[i],"/1/")),value = T)
 ```
 
@@ -152,6 +152,11 @@ resalll%>%replace_na(list(pval=0))%>%mutate(pval=pval<=1)%>%ggplot(aes(x=HCx,y=v
 
 
 ggsave("Arrhenatheretalia_HCx_pval.png",width=9,height=6.5,dpi=300)
+
+resalll%>%replace_na(list(pval=0))%>%mutate(pval=pval<=1)%>% filter(EP=="Mortality") %>% ggplot(aes(x=HCx,y=value,shape=`Yearly average`,col=factor(pval)))+geom_point(size=2)+facet_grid(EP+Year~Endpoint)+ylab("")+ scale_y_continuous(labels = scales::percent)+theme(legend.position = "bottom")+ theme(text=element_text(size=20))
+
+
+ggsave("Arrhenatheretalia_HCx_pval_SETAC2024.png",width=9,height=6,dpi=300)
 
 ```
 

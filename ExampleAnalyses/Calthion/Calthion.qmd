@@ -25,12 +25,13 @@ theme_set(theme_bw())
 
 
 ```{r}
-here::i_am("./Calthion.qmd")
-list.dirs("../Calthion",recursive = F)
+## here::i_am("./Calthion.qmd")
+## list.dirs("../Calthion",recursive = F)
 ```
 
 ```{r}
-dirs <- paste0("../Calthion/Run",37:60)
+## dirs <- paste0("../Calthion/Run",37:60)
+dirs <- paste0("/home/sagemaker-user/Projects/Research/IBCgrassGUI/ExampleAnalyses/Calthion/Run",37:60)
 ```
 
 
